@@ -17,7 +17,7 @@ import javax.swing.WindowConstants;
 
 public final class Helpers {
 	
-	//TODO modify PATH_HEADER if images do not load properly
+	// TODO modify PATH_HEADER if images do not load properly
 	private static final String SEP = File.separator;
 	private static final String PATH_HEADER = "images" + SEP;
 	

@@ -221,7 +221,7 @@ public class MatrixConstruction {
 	 * @return the penalty score obtained by the QR code, lower the better
 	 */
 	public static int evaluate(int[][] matrix) {
-		//TODO BONUS
+		// TODO BONUS
 	
 		return 0;
 	}
