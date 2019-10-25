@@ -11,8 +11,8 @@ public class MatrixConstruction {
 	 * 
 	 * both needs to have their alpha component to 255
 	 */
-	// TODO add constant for White pixel
-	// TODO add constant for Black pixel
+	public final static int W = 0xFF_FF_00_00;
+	public final static int B = 0xFF_00_00_00;
 	
 
 	// ...  MYDEBUGCOLOR = ...;
@@ -66,9 +66,7 @@ public class MatrixConstruction {
 	 *         initialized. The modules where the data should be remain empty.
 	 */
 	public static int[][] constructMatrix(int version, int mask) {
-		// TODO Implementer
-		return null;
-
+		return initializeMatrix(version);
 	}
 
 	/**
@@ -81,8 +79,15 @@ public class MatrixConstruction {
 	 * @return an empty matrix
 	 */
 	public static int[][] initializeMatrix(int version) {
-		// TODO Implementer
-		return null;
+		int size = QRCodeInfos.getMatrixSize(version);
+		int[][] matrixW = new int[size][size];
+		
+		for (int i = 0; i < (size); i++) {
+			for (int j = 0; j < (size); j++) {
+				matrixW[i][j] = W;
+			}
+		}
+		return matrixW;
 	}
 
 	/**

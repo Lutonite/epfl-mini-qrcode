@@ -11,7 +11,7 @@ public class Debug {
 		 */
 		MatrixConstructionTest01 test1 = new MatrixConstructionTest01();
 
-		//test1.testInitializePatternsV1();
+		test1.testInitializePatternsV1();
 		
 		//test1.testInitializePatternsV4();
 		
