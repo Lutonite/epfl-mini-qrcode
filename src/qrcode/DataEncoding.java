@@ -1,8 +1,8 @@
 package qrcode;
 
-//import java.nio.charset.StandardCharsets;
+import java.nio.charset.StandardCharsets;
 
-//import reedsolomon.ErrorCorrectionEncoding;
+import reedsolomon.ErrorCorrectionEncoding;
 
 public final class DataEncoding {
 
@@ -47,14 +47,14 @@ public final class DataEncoding {
 		int[] tabBytes = new int[inputBytes.length + 2];
 		int inputLength = inputBytes.length & 0xFF;
 
-		tabBytes[0] = (0b0100 << 4) + ((inputLength >> 4) << 4);
-		tabBytes[1] = (inputLength - (inputLength >> 4) << 4) + (inputBytes[0] >> 4);
+		tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
+		tabBytes[1] = ((inputLength - ((inputLength >> 4) << 4)) << 4) + (inputBytes[0] >> 4);
 
 		for (int i = 1; i < tabBytes.length - 2; i++) {
-			tabBytes[i+1] = (inputBytes[i-1] - (inputBytes[i-1] >> 4) << 4) + ((inputBytes[i] >> 4) << 4);
+			tabBytes[i+1] = ((inputBytes[i-1] - ((inputBytes[i-1] >> 4) << 4)) << 4) + (inputBytes[i] >> 4);
 		}
 
-		tabBytes[inputLength + 1] = (inputBytes[inputBytes.length - 1] - (inputBytes[inputBytes.length - 1] >> 4)) << 4;
+		tabBytes[tabBytes.length - 1] = (inputBytes[inputBytes.length - 1] - ((inputBytes[inputBytes.length - 1] >> 4) << 4)) << 4;
 
 		return tabBytes;
 	}
