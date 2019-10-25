@@ -13,8 +13,6 @@ public final class DataEncoding {
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
 		// TODO Implementer
-		//SALUT
-		//SALUT 2x
 		return null;
 	}
 
@@ -49,11 +47,7 @@ public final class DataEncoding {
 		int inputLength = inputBytes.length & 0xFF;
 
 		tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
-<<<<<<< Updated upstream
 		tabBytes[1] = ((inputLength - ((inputLength >> 4) << 4)) << 4) + (inputBytes[0] >> 4);
-=======
-		tabBytes[1] = (inputLength - (inputLength >> 4) << 4) + (inputBytes[0] >> 4);
->>>>>>> Stashed changes
 
 		for (int i = 1; i < tabBytes.length - 2; i++) {
 			tabBytes[i+1] = ((inputBytes[i-1] - ((inputBytes[i-1] >> 4) << 4)) << 4) + (inputBytes[i] >> 4);
@@ -86,7 +80,7 @@ public final class DataEncoding {
 			}
 			for (int i = 0; i < finalLength - encodedData.length; i++) {
 				if (i % 2 == 0)
-					output[i + encodedData.length] = 0b11101000;
+					output[i + encodedData.length] = 0b11101100;
 				else
 					output[i + encodedData.length] = 0b00010001;
 			}
