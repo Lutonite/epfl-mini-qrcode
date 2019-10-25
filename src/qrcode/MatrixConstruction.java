@@ -66,7 +66,9 @@ public class MatrixConstruction {
 	 *         initialized. The modules where the data should be remain empty.
 	 */
 	public static int[][] constructMatrix(int version, int mask) {
-		return initializeMatrix(version);
+		int[][] m = initializeMatrix(version);
+		addFinderPatterns(m);
+		return m;
 	}
 
 	/**
@@ -97,7 +99,23 @@ public class MatrixConstruction {
 	 *            the 2D array to modify: where to add the patterns
 	 */
 	public static void addFinderPatterns(int[][] matrix) {
-		// TODO Implementer
+		addFinderPatternsWhere(matrix, 0, 0);
+		addFinderPatternsWhere(matrix, matrix.length - 7, 0);
+		addFinderPatternsWhere(matrix, 0, matrix.length - 7);
+	}
+	
+	public static void addFinderPatternsWhere(int[][] matrix, int x, int y)
+	{
+		for (int i = 0; i < 7; i++)
+		{
+			for (int j = 0; j < 7; j++)
+			{
+				if ((i == 0 || i == 6 || j == 0 || j == 6) || ((j >= 2 && j <= 4) && (i >= 2 && i <= 4)))
+				{
+					matrix[i+x][j+y] = B;
+				}
+			}
+		}
 	}
 
 	/**
