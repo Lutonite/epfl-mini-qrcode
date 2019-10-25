@@ -12,8 +12,7 @@ public final class DataEncoding {
 	 * @return
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
-		// TODO Implementer
-		return null;
+		return bytesToBinaryArray(addErrorCorrection(fillSequence(addInformations(encodeString(input, QRCodeInfos.getMaxInputLength(version))), QRCodeInfos.getCodeWordsLength(version)), QRCodeInfos.getECCLength(version)));
 	}
 
 	/**
