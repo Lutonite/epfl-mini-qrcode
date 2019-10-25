@@ -28,9 +28,7 @@ public class Debug {
 		MatrixConstructionTest02 test2 = new MatrixConstructionTest02();
 		
 		//test2.testRenderQRCodeMatrixV1();
-		
-		//test2.testAddDataInformationOnEmptyMat();
-		
+				
 		//test2.testAddDataInformationWithNoData();
 		
 		//test2.testAddDataInformation();

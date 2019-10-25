@@ -39,12 +39,6 @@ class MatrixConstructionTest02 {
 		assertEquals(-16777216 , MatrixConstruction.maskColor(0, 2, false, 2));
 	}
 
-	@Test
-	void testAddDataInformationOnEmptyMat() {
-		int[][] matrix = new int[41][41];
-		MatrixConstruction.addDataInformation(matrix, data, 0);
-		assertTrue(Helpers.compare(matrix, "dataMatEmpty"),"The data bit are not placed as expected. Use Debug.java for more informations");
-	}
 	
 	@Test
 	void testAddDataInformationWithNoData() {
