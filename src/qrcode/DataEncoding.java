@@ -46,13 +46,13 @@ public final class DataEncoding {
 		int inputLength = inputBytes.length & 0xFF;
 
 		tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
-		tabBytes[1] = ((inputLength - ((inputLength >> 4) << 4)) << 4) + (inputBytes[0] >> 4);
+		tabBytes[1] = ((inputLength & 0x0F) << 4) + (inputBytes[0] >> 4);
 
 		for (int i = 1; i < tabBytes.length - 2; i++) {
-			tabBytes[i+1] = ((inputBytes[i-1] - ((inputBytes[i-1] >> 4) << 4)) << 4) + (inputBytes[i] >> 4);
+			tabBytes[i+1] = ((inputBytes[i-1] & 0x0F) << 4) + (inputBytes[i] >> 4);
 		}
 
-		tabBytes[tabBytes.length - 1] = (inputBytes[inputBytes.length - 1] - ((inputBytes[inputBytes.length - 1] >> 4) << 4)) << 4;
+		tabBytes[tabBytes.length - 1] = (inputBytes[inputBytes.length - 1] & 0x0F) << 4;
 
 		return tabBytes;
 	}
