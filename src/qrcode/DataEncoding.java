@@ -75,14 +75,15 @@ public final class DataEncoding {
 			return encodedData;
 		} else {
 			int[] output = new int[finalLength];
-			for (int i = 0; i < encodedData.length; i++) {
-				output[i] = encodedData[i];
-			}
-			for (int i = 0; i < finalLength - encodedData.length; i++) {
-				if (i % 2 == 0)
-					output[i + encodedData.length] = 0b11101100;
-				else
-					output[i + encodedData.length] = 0b00010001;
+			for (int i = 0; i < finalLength; i++) {
+				if (i < encodedData.length) {
+					output[i] = encodedData[i];
+				} else {
+					if ((i - encodedData.length) % 2 == 0)
+						output[i] = 0b11101100;
+					else
+						output[i] = 0b00010001;	
+				}
 			}
 			
 			return output;
