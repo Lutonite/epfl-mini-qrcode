@@ -1,5 +1,0 @@
-language: java
-before_install:
-  - "export DISPLAY=:99.0"
-env: DISPLAY=:99
-script: mvn integration-test -B
