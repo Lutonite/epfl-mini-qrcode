@@ -1,8 +1,8 @@
 package qrcode;
 
-import java.nio.charset.StandardCharsets;
+//import java.nio.charset.StandardCharsets;
 
-import reedsolomon.ErrorCorrectionEncoding;
+//import reedsolomon.ErrorCorrectionEncoding;
 
 public final class DataEncoding {
 
@@ -13,6 +13,7 @@ public final class DataEncoding {
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
 		// TODO Implementer
+		//SALUT
 		return null;
 	}
 
