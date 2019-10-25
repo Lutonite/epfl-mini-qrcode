@@ -14,6 +14,7 @@ public final class DataEncoding {
 	public static boolean[] byteModeEncoding(String input, int version) {
 		// TODO Implementer
 		//SALUT
+		//SALUT 2x
 		return null;
 	}
 
