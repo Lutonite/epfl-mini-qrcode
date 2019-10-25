@@ -25,9 +25,14 @@ public final class DataEncoding {
 	 *         truncated to fit the version capacity
 	 */
 	public static int[] encodeString(String input, int maxLength) {
-		// TODO Implementer
+		byte[] tabByte = input.getBytes(StandardCharsets.ISO_8859_1);
+		int[] tabInt = new int[Math.min(tabByte.length, maxLength)];
 
-		return null;
+		for (int i = 0; i < tabInt.length; i++) {
+			tabInt[i] = tabByte[i] & 0xFF;
+		}
+
+		return tabInt;
 	}
 
 	/**
@@ -38,8 +43,19 @@ public final class DataEncoding {
 	 * @return The input bytes with an header giving the type and size of the data
 	 */
 	public static int[] addInformations(int[] inputBytes) {
-		// TODO Implementer
-		return null;
+		int[] tabBytes = new int[inputBytes.length + 2];
+		int inputLength = inputBytes.length & 0xFF;
+
+		tabBytes[0] = (0b0100 << 4) + ((inputLength >> 4) << 4);
+		tabBytes[1] = (inputLength - (inputLength >> 4) << 4) + (inputBytes[0] >> 4);
+
+		for (int i = 1; i < tabBytes.length - 2; i++) {
+			tabBytes[i+1] = (inputBytes[i-1] - (inputBytes[i-1] >> 4) << 4) + ((inputBytes[i] >> 4) << 4);
+		}
+
+		tabBytes[inputLength + 1] = (inputBytes[inputBytes.length - 1] - (inputBytes[inputBytes.length - 1] >> 4)) << 4;
+
+		return tabBytes;
 	}
 
 	/**
