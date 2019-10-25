@@ -55,6 +55,7 @@ public final class DataEncoding {
 			tabBytes[i+1] = ((inputBytes[i-1] - ((inputBytes[i-1] >> 4) << 4)) << 4) + (inputBytes[i] >> 4);
 		}
 
+		// TODO eventuellement optimiser
 		tabBytes[tabBytes.length - 1] = (inputBytes[inputBytes.length - 1] - ((inputBytes[inputBytes.length - 1] >> 4) << 4)) << 4;
 
 		return tabBytes;
