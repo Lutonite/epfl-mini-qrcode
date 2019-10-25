@@ -87,8 +87,18 @@ public final class DataEncoding {
 	 * @return the original data concatenated with the error correction
 	 */
 	public static int[] addErrorCorrection(int[] encodedData, int eccLength) {
-		// TODO Implementer
-		return null;
+		int[] errorEncoding = ErrorCorrectionEncoding.encode(encodedData, eccLength);
+		int[] outputData = new int[encodedData.length + errorEncoding.length];
+
+		for (int i = 0; i < outputData.length; i++) {
+			if (i < encodedData.length) {
+				outputData[i] = encodedData[i];
+			} else {
+				outputData[i] = errorEncoding[i - encodedData.length];
+			}
+		}
+
+		return outputData;
 	}
 
 	/**
