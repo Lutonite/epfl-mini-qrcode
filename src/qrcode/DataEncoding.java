@@ -49,7 +49,11 @@ public final class DataEncoding {
 		int inputLength = inputBytes.length & 0xFF;
 
 		tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
+<<<<<<< Updated upstream
 		tabBytes[1] = ((inputLength - ((inputLength >> 4) << 4)) << 4) + (inputBytes[0] >> 4);
+=======
+		tabBytes[1] = (inputLength - (inputLength >> 4) << 4) + (inputBytes[0] >> 4);
+>>>>>>> Stashed changes
 
 		for (int i = 1; i < tabBytes.length - 2; i++) {
 			tabBytes[i+1] = ((inputBytes[i-1] - ((inputBytes[i-1] >> 4) << 4)) << 4) + (inputBytes[i] >> 4);
@@ -73,8 +77,22 @@ public final class DataEncoding {
 	 *         bytes 236,17
 	 */
 	public static int[] fillSequence(int[] encodedData, int finalLength) {
-		// TODO Implementer
-		return null;
+		if (finalLength <= encodedData.length) {
+			return encodedData;
+		} else {
+			int[] output = new int[finalLength];
+			for (int i = 0; i < encodedData.length; i++) {
+				output[i] = encodedData[i];
+			}
+			for (int i = 0; i < finalLength - encodedData.length; i++) {
+				if (i % 2 == 0)
+					output[i + encodedData.length] = 0b11101000;
+				else
+					output[i + encodedData.length] = 0b00010001;
+			}
+			
+			return output;
+		}
 	}
 
 	/**
