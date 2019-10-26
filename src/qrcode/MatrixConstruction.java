@@ -14,6 +14,8 @@ public class MatrixConstruction {
 	public final static int W = 0xFF_FF_00_00;
 	public final static int B = 0xFF_00_00_00;
 	
+	private static enum Pattern {FINDERPATTERN}
+	
 
 	// ...  MYDEBUGCOLOR = ...;
 	// feel free to add your own colors for debugging purposes
@@ -99,22 +101,25 @@ public class MatrixConstruction {
 	 *            the 2D array to modify: where to add the patterns
 	 */
 	public static void addFinderPatterns(int[][] matrix) {
-		addFinderPatternsWhere(matrix, 0, 0);
-		addFinderPatternsWhere(matrix, matrix.length - 7, 0);
-		addFinderPatternsWhere(matrix, 0, matrix.length - 7);
+		addPattern(Pattern.FINDERPATTERN, matrix, 0, 0);
+		addPattern(Pattern.FINDERPATTERN, matrix, matrix.length - 7, 0);
+		addPattern(Pattern.FINDERPATTERN, matrix, 0, matrix.length - 7);
 	}
 	
-	public static void addFinderPatternsWhere(int[][] matrix, int x, int y)
+	public static void addPattern(Pattern p, int[][] matrix, int x, int y)
 	{
-		for (int i = 0; i < 7; i++)
+		if (p == Pattern.FINDERPATTERN)
 		{
-			for (int j = 0; j < 7; j++)
+			for (int i = 0; i < 7; i++)
 			{
-				if ((i == 0 || i == 6 || j == 0 || j == 6) || ((j >= 2 && j <= 4) && (i >= 2 && i <= 4)))
+				for (int j = 0; j < 7; j++)
 				{
-					matrix[i+x][j+y] = B;
+					if ((i == 0 || i == 6 || j == 0 || j == 6) || ((j >= 2 && j <= 4) && (i >= 2 && i <= 4)))
+					{
+						matrix[i+x][j+y] = B;
+					}
 				}
-			}
+			}	
 		}
 	}
 
