@@ -11,11 +11,109 @@ public class MatrixConstruction {
 	 * 
 	 * both needs to have their alpha component to 255
 	 */
-	public final static int W = 0xFF_FF_00_00;
+	public final static int W = 0xFF_FF_FF_FF;
 	public final static int B = 0xFF_00_00_00;
-	
-	private static enum Pattern {FINDERPATTERN}
-	
+
+	/**
+	 * Pattern definitions, any pattern can be added with the following properties:
+	 * 		- int[][] patternMatrix (required)       The pattern, for alternating patterns it must only be the recurring part
+	 * 	 	- boolean borders		(default: false) Whether the pattern requires white borders to be added
+	 * 	 	- boolean alternating	(default: false) Whether the pattern is an alternating sequence or not
+	 */
+	private enum Pattern {
+		FINDERPATTERN 	(1),
+		ALIGNMENTPATTERN(2),
+		TIMINGPATTERNCOL(3),
+		TIMINGPATTERNROW(4);
+
+		private int[][] patternMatrix;
+		private boolean recurring = false;
+		private boolean borders = false;
+
+		Pattern(int patternCode) {
+			switch(patternCode) {
+				case 1:
+					patternMatrix = new int[][] {
+							{1,1,1,1,1,1,1},
+							{1,0,0,0,0,0,1},
+							{1,0,1,1,1,0,1},
+							{1,0,1,1,1,0,1},
+							{1,0,1,1,1,0,1},
+							{1,0,0,0,0,0,1},
+							{1,1,1,1,1,1,1}
+					};
+					borders = true;
+					break;
+				case 2:
+					patternMatrix = new int[][] {
+							{1,1,1,1,1},
+							{1,0,0,0,1},
+							{1,0,1,0,1},
+							{1,0,0,0,1},
+							{1,1,1,1,1}
+					};
+					break;
+				case 3:
+					patternMatrix = new int[][] {
+							{1},
+							{0}
+					};
+					recurring = true;
+					break;
+				case 4:
+					patternMatrix = new int[][] {
+							{1, 0}
+					};
+					recurring = true;
+					break;
+			}
+		}
+		
+		private int[] sizeOfMatrix() {
+			return new int[] {patternMatrix.length, patternMatrix[0].length};
+		}
+
+		public int[][] getPatternMatrix() {
+			return patternMatrix;
+		}
+
+		public int[] getSize() {
+			return sizeOfMatrix();
+		}
+
+		public boolean isRecurring() {
+			return recurring;
+		}
+
+		public boolean hasBorders() {
+			return borders;
+		}
+	}
+
+	/**
+	 * Interface declaration for Anchor's directions
+	 */
+	private interface Direction {
+		int[] translateValues (int[] size);
+	}
+
+	/**
+	 * Anchor points, unused anchor points are commented out but they can be added anytime.
+	 * Implements the Direction interface to provide the translateValues function which, given the size of a rectangular
+	 * 		pattern int[y][x] in the form of an array {y, x}, returns the translation coordinates to access the NORTH_EAST
+	 * 		position. Any possible pattern iteration done afterwards.
+	 */
+	private enum Anchor implements Direction {
+		NORTH 	   {public int[] translateValues(int[] size) { return new int[] {0        , size[1]/2}; }},
+		NORTH_EAST {public int[] translateValues(int[] size) { return new int[] {0        , size[1]  }; }},
+//		EAST 	   {public int[] translateValues(int[] size) { return new int[] {size[0]/2, size[1]  }; }},
+//		SOUTH_EAST {public int[] translateValues(int[] size) { return new int[] {size[0]  , size[1]  }; }},
+//		SOUTH	   {public int[] translateValues(int[] size) { return new int[] {size[0]  , size[1]/2}; }},
+		SOUTH_WEST {public int[] translateValues(int[] size) { return new int[] {size[0]  , 0        }; }},
+		WEST	   {public int[] translateValues(int[] size) { return new int[] {size[0]/2, 0        }; }},
+		NORTH_WEST {public int[] translateValues(int[] size) { return new int[] {0        , 0        }; }},
+		CENTER	   {public int[] translateValues(int[] size) { return new int[] {size[0]/2, size[1]/2}; }}
+	}
 
 	// ...  MYDEBUGCOLOR = ...;
 	// feel free to add your own colors for debugging purposes
@@ -70,6 +168,10 @@ public class MatrixConstruction {
 	public static int[][] constructMatrix(int version, int mask) {
 		int[][] m = initializeMatrix(version);
 		addFinderPatterns(m);
+		addAlignmentPatterns(m, version);
+		addTimingPatterns(m);
+		addDarkModule(m);
+		addFormatInformation(m, mask);
 		return m;
 	}
 
@@ -84,14 +186,64 @@ public class MatrixConstruction {
 	 */
 	public static int[][] initializeMatrix(int version) {
 		int size = QRCodeInfos.getMatrixSize(version);
-		int[][] matrixW = new int[size][size];
 		
-		for (int i = 0; i < (size); i++) {
+		/*for (int i = 0; i < (size); i++) {
 			for (int j = 0; j < (size); j++) {
 				matrixW[i][j] = W;
 			}
+		}*/
+		return new int[size][size];
+	}
+
+	/**
+	 * Overloaded method for non-alterning patterns without maximum coordinates.
+	 *
+	 * @see MatrixConstruction#addPattern(Pattern, Anchor, int[][], int, int, int, int)
+	 */
+	private static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y) {
+		if (p.isRecurring())
+			throw new IllegalArgumentException("Alterning patterns must have maximum coordinates");
+
+		addPattern(p, a, matrix, x, y, -1, -1);
+	}
+
+	/**
+	 * Adds a given pattern from specific coordinates around a given anchor in a matrix
+	 *
+	 * @param p A pattern to add
+	 * @param a The anchor from which the pattern should be added
+	 * @param matrix The matrix reference where the pattern should be added
+	 * @param x The starting x coordinate from the anchor
+	 * @param y The starting y coordinate from the anchor
+	 * @param maxX The maximum x coordinate from the anchor (only used when the pattern is alterning)
+	 * @param maxY The maximum y coordinate from the anchor (only used when the pattern is alterning)
+	 */
+	private static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y, int maxX, int maxY) {
+		for (int j = 0; j < (p.isRecurring() ? maxY - y + 1 : p.getSize()[0]); j++) {
+			for (int i = 0; i < (p.isRecurring() ? maxX - x + 1 : p.getSize()[1]); i++) {
+				if (p.isRecurring())
+					matrix[j + y][i + x] = p.getPatternMatrix()[j % p.getSize()[0]][i % p.getSize()[1]] == 0 ? W : B;
+				else
+					matrix[j + y - a.translateValues(p.getSize())[0]][i + x - a.translateValues(p.getSize())[1]] =
+							p.getPatternMatrix()[j][i] == 0 ? W : B;
+			}
 		}
-		return matrixW;
+
+		if (p.hasBorders()) {
+			for (int j = -1; j <= p.getSize()[0]; j++) {
+				for (int i = -1; i <= p.getSize()[1]; i++) {
+					int xCord = i + x - a.translateValues(p.getSize())[1];
+					int yCord = j + y - a.translateValues(p.getSize())[0];
+
+					if ((j == -1 && yCord >= 0 && i > -1) ||
+							(i == -1 && xCord >= 0 && j > -1) ||
+							(j == p.getSize()[0] && yCord <= p.getSize()[0] && xCord > -1 && xCord < matrix.length) ||
+							(i == p.getSize()[1] && xCord <= p.getSize()[1] && yCord > -1 && yCord < matrix.length)) {
+						matrix[yCord][xCord] = W;
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -101,26 +253,9 @@ public class MatrixConstruction {
 	 *            the 2D array to modify: where to add the patterns
 	 */
 	public static void addFinderPatterns(int[][] matrix) {
-		addPattern(Pattern.FINDERPATTERN, matrix, 0, 0);
-		addPattern(Pattern.FINDERPATTERN, matrix, matrix.length - 7, 0);
-		addPattern(Pattern.FINDERPATTERN, matrix, 0, matrix.length - 7);
-	}
-	
-	public static void addPattern(Pattern p, int[][] matrix, int x, int y)
-	{
-		if (p == Pattern.FINDERPATTERN)
-		{
-			for (int i = 0; i < 7; i++)
-			{
-				for (int j = 0; j < 7; j++)
-				{
-					if ((i == 0 || i == 6 || j == 0 || j == 6) || ((j >= 2 && j <= 4) && (i >= 2 && i <= 4)))
-					{
-						matrix[i+x][j+y] = B;
-					}
-				}
-			}	
-		}
+		addPattern(Pattern.FINDERPATTERN, Anchor.NORTH_WEST, matrix, 0         , 0         );
+		addPattern(Pattern.FINDERPATTERN, Anchor.NORTH_EAST, matrix, matrix.length, 0         );
+		addPattern(Pattern.FINDERPATTERN, Anchor.SOUTH_WEST, matrix, 0         , matrix.length);
 	}
 
 	/**
@@ -133,7 +268,8 @@ public class MatrixConstruction {
 	 *            included
 	 */
 	public static void addAlignmentPatterns(int[][] matrix, int version) {
-		// TODO Implementer
+		if (version > 2)
+			addPattern(Pattern.ALIGNMENTPATTERN, Anchor.CENTER, matrix, matrix.length - 7, matrix.length - 7);
 	}
 
 	/**
@@ -143,7 +279,8 @@ public class MatrixConstruction {
 	 *            The 2D array to modify
 	 */
 	public static void addTimingPatterns(int[][] matrix) {
-		// TODO Implementer
+		addPattern(Pattern.TIMINGPATTERNROW, Anchor.WEST , matrix, 8, 6, matrix.length - 8, 6);
+		addPattern(Pattern.TIMINGPATTERNCOL, Anchor.NORTH, matrix, 6, 8, 6, matrix.length - 8);
 	}
 
 	/**
@@ -153,7 +290,7 @@ public class MatrixConstruction {
 	 *            the 2-dimensional array representing the QR code
 	 */
 	public static void addDarkModule(int[][] matrix) {
-		// TODO Implementer
+		matrix[8][matrix.length - 8] = B;
 	}
 
 	/**
@@ -165,7 +302,15 @@ public class MatrixConstruction {
 	 *            the mask id
 	 */
 	public static void addFormatInformation(int[][] matrix, int mask) {
-		// TODO Implementer
+		boolean[] formatSequence = QRCodeInfos.getFormatSequence(mask);
+
+		for (int i = 0; i < formatSequence.length; i++) {
+			matrix[i < 6 ? i : i == 6 ? i + 1 : 8][i > 8 ? 14 - i : i == 8 ? i - 1 : 8] = formatSequence[i] ? B : W;
+		}
+
+		for (int i = 0; i < formatSequence.length; i++) {
+			matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 : matrix.length - 7 + i] = formatSequence[i] ? B : W;
+		}
 	}
 
 	/*
