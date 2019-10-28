@@ -186,12 +186,6 @@ public class MatrixConstruction {
 	 */
 	public static int[][] initializeMatrix(int version) {
 		int size = QRCodeInfos.getMatrixSize(version);
-		
-		/*for (int i = 0; i < (size); i++) {
-			for (int j = 0; j < (size); j++) {
-				matrixW[i][j] = W;
-			}
-		}*/
 		return new int[size][size];
 	}
 
