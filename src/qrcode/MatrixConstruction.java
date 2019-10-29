@@ -252,7 +252,7 @@ public class MatrixConstruction {
 	 *            included
 	 */
 	public static void addAlignmentPatterns(int[][] matrix, int version) {
-		if (version > 2)
+		if (version >= 2)
 			addPattern(Pattern.ALIGNMENTPATTERN, Anchor.CENTER, matrix, matrix.length - 7, matrix.length - 7);
 	}
 
