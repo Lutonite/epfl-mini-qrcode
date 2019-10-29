@@ -307,13 +307,27 @@ public class MatrixConstruction {
 	 *            x-coordinate
 	 * @param row
 	 *            y-coordinate
-	 * @param color
-	 *            : initial color without masking
+	 * @param dataBit
+	 *
 	 * @return the color with the masking
 	 */
 	public static int maskColor(int col, int row, boolean dataBit, int masking) {
-		// TODO Implementer
-		return 0;
+		boolean applyMask;
+
+		int i = ((row * col) % 2) + ((row * col) % 3);
+		switch (masking) {
+			case 0: applyMask = (col + row) % 2 == 0; break;
+			case 1: applyMask = row % 2 == 0; break;
+			case 2: applyMask = col % 3 == 0; break;
+			case 3: applyMask = (col + row) % 3 == 0; break;
+			case 4: applyMask = ((row / 2) + (col / 3)) % 2 == 0; break;
+			case 5: applyMask = i == 0; break;
+			case 6: applyMask = i % 2 == 0; break;
+			case 7: applyMask = (((row + col) % 2) + ((row * col) % 3)) % 2 == 0; break;
+			default: applyMask = false;
+		}
+
+		return applyMask ? dataBit ? W : B : dataBit ? B : W;
 	}
 
 	/**
