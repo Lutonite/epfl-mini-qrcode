@@ -14,6 +14,9 @@ public class MatrixConstruction {
 	public final static int W = 0xFF_FF_FF_FF;
 	public final static int B = 0xFF_00_00_00;
 
+	// ...  MYDEBUGCOLOR = ...;
+	// feel free to add your own colors for debugging purposes
+
 	/**
 	 * Pattern definitions, any pattern can be added with the following properties:
 	 * 		- int[][] patternMatrix (required)       The pattern, for alternating patterns it must only be the recurring part
@@ -73,21 +76,11 @@ public class MatrixConstruction {
 			return new int[] {patternMatrix.length, patternMatrix[0].length};
 		}
 
-		public int[][] getPatternMatrix() {
-			return patternMatrix;
-		}
-
-		public int[] getSize() {
-			return sizeOfMatrix();
-		}
-
-		public boolean isRecurring() {
-			return recurring;
-		}
-
-		public boolean hasBorders() {
-			return borders;
-		}
+		// Getters
+		public int[][] getPatternMatrix() { return patternMatrix; }
+		public int[] getSize() { return sizeOfMatrix(); }
+		public boolean isRecurring() { return recurring; }
+		public boolean hasBorders() { return borders; }
 	}
 
 	/**
@@ -114,9 +107,6 @@ public class MatrixConstruction {
 		NORTH_WEST {public int[] translateValues(int[] size) { return new int[] {0        , 0        }; }},
 		CENTER	   {public int[] translateValues(int[] size) { return new int[] {size[0]/2, size[1]/2}; }}
 	}
-
-	// ...  MYDEBUGCOLOR = ...;
-	// feel free to add your own colors for debugging purposes
 
 	/**
 	 * Create the matrix of a QR code with the given data.
@@ -300,9 +290,6 @@ public class MatrixConstruction {
 
 		for (int i = 0; i < formatSequence.length; i++) {
 			matrix[i < 6 ? i : i == 6 ? i + 1 : 8][i > 8 ? 14 - i : i == 8 ? i - 1 : 8] = formatSequence[i] ? B : W;
-		}
-
-		for (int i = 0; i < formatSequence.length; i++) {
 			matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 : matrix.length - 7 + i] = formatSequence[i] ? B : W;
 		}
 	}
