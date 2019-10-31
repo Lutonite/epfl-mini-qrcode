@@ -94,7 +94,7 @@ public class MatrixConstruction {
 	 * Anchor points, unused anchor points are commented out but they can be added anytime.
 	 * Implements the Direction interface to provide the translateValues function which, given the size of a rectangular
 	 * 		pattern int[y][x] in the form of an array {y, x}, returns the translation coordinates to access the NORTH_EAST
-	 * 		position. Any possible pattern iteration done afterwards.
+	 * 		position. This simplifies any possible pattern iteration done afterwards.
 	 */
 	private enum Anchor implements Direction {
 		NORTH 	   {public int[] translateValues(int[] size) { return new int[] {0        , size[1]/2}; }},
@@ -339,8 +339,40 @@ public class MatrixConstruction {
 	 *            the data to add
 	 */
 	public static void addDataInformation(int[][] matrix, boolean[] data, int mask) {
-		// TODO Implementer
+        int x = matrix.length - 1;
+        int y = matrix.length - 1;
 
+        int currentBit = 0;
+        int direction = -1;
+
+        while (x > 0) {
+            // Skip vertical timing pattern
+            if (x == 6) x -= 1;
+
+            while (y >= 0 && y < matrix.length) {
+                for (int i = 0; i < 2; i++) {
+                    int posX = x - i;
+
+                    // If a bit is already placed there
+                    if (matrix[posX][y] != 0) continue;
+
+                    boolean bitToPlace;
+                    if (currentBit < data.length) {
+                        bitToPlace = data[currentBit];
+                        currentBit++;
+                    } else {
+                        bitToPlace = false;
+                    }
+
+                    matrix[posX][y] = maskColor(y, posX, bitToPlace, mask);
+                }
+                y += direction;
+            }
+
+            direction = -direction;
+            y += direction;
+            x -= 2;
+        }
 	}
 
 	/*
@@ -373,7 +405,10 @@ public class MatrixConstruction {
 	 * Find the best mask to apply to a QRcode so that the penalty score is
 	 * minimized. Compute the penalty score with evaluate
 	 * 
+	 * @param version
+	 * 			Version of the QR Code
 	 * @param data
+	 * 			Data to add
 	 * @return the mask number that minimize the penalty
 	 */
 	public static int findBestMasking(int version, boolean[] data) {

@@ -7,9 +7,9 @@ import reedsolomon.ErrorCorrectionEncoding;
 public final class DataEncoding {
 
 	/**
-	 * @param input
-	 * @param version
-	 * @return
+	 * @param input String to put in binary array
+	 * @param version Version number for QR code
+	 * @return Byte array in booleans of the encoded string with added ECC
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
 		return bytesToBinaryArray(addErrorCorrection(fillSequence(addInformations(encodeString(input, QRCodeInfos.getMaxInputLength(version))), QRCodeInfos.getCodeWordsLength(version)), QRCodeInfos.getECCLength(version)));

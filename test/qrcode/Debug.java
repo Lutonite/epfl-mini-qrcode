@@ -19,7 +19,7 @@ public class Debug {
 		
 		//test1.testAddFormatInformationV4M5();
 		
-		test1.testConstructMatrix();
+		//test1.testConstructMatrix();
 		
 		/*
 		 * 		MatrixConstructionTest02
