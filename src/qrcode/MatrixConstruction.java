@@ -431,7 +431,27 @@ public class MatrixConstruction {
 	 */
 	public static int evaluate(int[][] matrix) {
 		// TODO BONUS
-	
+
+
+
+
+
+
+
+
+		// step 4
+		int modulesTotal = matrix.length * matrix.length;
+		int darkModulesTotal = 0;
+
+		for (int i = 0; i < matrix.length; i++) {
+			for (int j = 0; j < matrix[i].length; j++) {
+				if (matrix[i][j] == B) darkModulesTotal++;
+			}
+		}
+
+		int fivePercentVariances = Math.abs(darkModulesTotal * 2 - modulesTotal) * 10 / modulesTotal;
+		System.out.println(fivePercentVariances*10);
+
 		return 0;
 	}
 
