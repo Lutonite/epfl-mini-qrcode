@@ -12,7 +12,19 @@ public final class DataEncoding {
 	 * @return Byte array in booleans of the encoded string with added ECC
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
-		return bytesToBinaryArray(addErrorCorrection(fillSequence(addInformations(encodeString(input, QRCodeInfos.getMaxInputLength(version))), QRCodeInfos.getCodeWordsLength(version)), QRCodeInfos.getECCLength(version)));
+		return bytesToBinaryArray(
+				addErrorCorrection(
+						fillSequence(
+								addInformations(
+										encodeString(
+												input,
+												QRCodeInfos.getMaxInputLength(version))
+								),
+								QRCodeInfos.getCodeWordsLength(version)
+						),
+						QRCodeInfos.getECCLength(version)
+				)
+		);
 	}
 
 	/**
