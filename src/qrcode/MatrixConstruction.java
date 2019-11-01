@@ -1,5 +1,7 @@
 package qrcode;
 
+import java.security.cert.Extension;
+
 public class MatrixConstruction {
 
 	/*
@@ -23,7 +25,7 @@ public class MatrixConstruction {
 	 * 	 	- boolean borders		(default: false) Whether the pattern requires white borders to be added
 	 * 	 	- boolean alternating	(default: false) Whether the pattern is an alternating sequence or not
 	 */
-	private enum Pattern {
+	public enum Pattern {
 		FINDERPATTERN 	(1),
 		ALIGNMENTPATTERN(2),
 		TIMINGPATTERNCOL(3),
@@ -96,7 +98,7 @@ public class MatrixConstruction {
 	 * 		pattern int[y][x] in the form of an array {y, x}, returns the translation coordinates to access the NORTH_EAST
 	 * 		position. This simplifies any possible pattern iteration done afterwards.
 	 */
-	private enum Anchor implements Direction {
+	public enum Anchor implements Direction {
 		NORTH 	   {public int[] translateValues(int[] size) { return new int[] {0        , size[1]/2}; }},
 		NORTH_EAST {public int[] translateValues(int[] size) { return new int[] {0        , size[1]  }; }},
 //		EAST 	   {public int[] translateValues(int[] size) { return new int[] {size[0]/2, size[1]  }; }},
@@ -158,7 +160,8 @@ public class MatrixConstruction {
 	public static int[][] constructMatrix(int version, int mask) {
 		int[][] m = initializeMatrix(version);
 		addFinderPatterns(m);
-		addAlignmentPatterns(m, version);
+		if (Main.USE_EXTENSIONS) Extensions.addAlignmentPatterns(m, version);
+		else addAlignmentPatterns(m, version);
 		addTimingPatterns(m);
 		addDarkModule(m);
 		addFormatInformation(m, mask);
@@ -184,7 +187,7 @@ public class MatrixConstruction {
 	 *
 	 * @see MatrixConstruction#addPattern(Pattern, Anchor, int[][], int, int, int, int)
 	 */
-	private static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y) {
+	public static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y) {
 		if (p.isRecurring())
 			throw new IllegalArgumentException("Alterning patterns must have maximum coordinates");
 
@@ -202,7 +205,7 @@ public class MatrixConstruction {
 	 * @param maxX The maximum x coordinate from the anchor (only used when the pattern is alterning)
 	 * @param maxY The maximum y coordinate from the anchor (only used when the pattern is alterning)
 	 */
-	private static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y, int maxX, int maxY) {
+	public static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y, int maxX, int maxY) {
 		for (int j = 0; j < (p.isRecurring() ? maxY - y + 1 : p.getSize()[0]); j++) {
 			for (int i = 0; i < (p.isRecurring() ? maxX - x + 1 : p.getSize()[1]); i++) {
 				if (p.isRecurring())
@@ -371,6 +374,9 @@ public class MatrixConstruction {
 
             direction = -direction;
             y += direction;
+
+            // since qr codes are always odd sized, we will never get an out of bounds since we skip one column
+            // to avoid the vertical timing patten at x = 6.
             x -= 2;
         }
 	}
