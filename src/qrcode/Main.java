@@ -7,26 +7,23 @@ public class Main {
 	/*
 	 * Parameters
 	 */
-	public static final int VERSION = 1;
+	public static final int VERSION = 10;
 	public static final int MASK = 0;
 	public static final int SCALING = 20;
 
+	public static final boolean USE_EXTENSIONS = true;
+
 	public static void main(String[] args) {
 
-		/*
-		 * Encoding
-		 */
+		// Encoding
 		boolean[] encodedData = DataEncoding.byteModeEncoding(INPUT, VERSION);
 		
-		/*
-		 * image
-		 */
+		// Image
 		int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(VERSION, encodedData,MASK);
 
-		/*
-		 * Visualization
-		 */
+		// Visualization
 		Helpers.show(qrCode, SCALING);
+
 	}
 
 }
