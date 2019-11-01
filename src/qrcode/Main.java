@@ -2,7 +2,7 @@ package qrcode;
 
 public class Main {
 
-	public static final String INPUT =  "Test";
+	public static final String INPUT =  "Hello";
 
 	/*
 	 * Parameters
@@ -24,6 +24,7 @@ public class Main {
 		// Visualization
 		Helpers.show(qrCode, SCALING);
 
+		System.out.println(MatrixConstruction.evaluate(qrCode));
 	}
 
 }
