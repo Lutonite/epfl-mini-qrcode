@@ -430,16 +430,105 @@ public class MatrixConstruction {
 	 * @return the penalty score obtained by the QR code, lower the better
 	 */
 	public static int evaluate(int[][] matrix) {
-		// TODO BONUS
-
-
-
-
-
-
-
-
-		// step 4
+		int penality = 0;
+		
+		//STEP 1
+		for (int d = 0; d <= 1; ++d) {
+			int count = 0;
+			for (int i = 0; i < matrix.length; ++i) {
+				for (int j = 0; j < matrix[i].length; ++j) {
+					int x = 0;
+					int y = 0;
+					
+					if (d == 0)
+						x = 1;
+					else
+						y = 1;
+					
+					if ((j == 0 && y == 1) || (i == 0 && x == 1) || (matrix[i-x][j-y] == matrix[i][j]))
+						count++;
+					else
+						count = 0;
+					
+					if (count == 5)
+						penality += 3;
+					else if (count > 5)
+						++penality;
+				}
+				count = 0;
+			}
+		}
+		System.out.println("STEP 1 : " + penality);
+		int p = penality;
+		
+		//STEP 2
+		for (int i = 0; i < matrix.length; ++i) {
+			for (int j = 0; j < matrix[i].length; ++j) {
+				if (i != 0 && j != 0 && i != matrix.length -1 && j != matrix.length -1) {
+					if (matrix[i][j] == matrix[i][j+1]
+						&& matrix[i][j] == matrix[i+1][j+1]
+						&& matrix [i][j] == matrix[i][j+1]) {
+						penality += 3;
+					}
+				}
+			}
+		}
+		System.out.println("STEP 2 : " + Integer.toString(penality - p));
+		p = penality;
+		
+		//STEP 3
+		int[][] matrixWhiteBorders = new int[matrix.length+2][matrix.length+2];
+		for (int i = 0; i < matrixWhiteBorders.length; ++i) {
+			for (int j = 0; j < matrixWhiteBorders[i].length; ++j) {
+				if (i == 0 || j == 0 || i == matrixWhiteBorders.length - 1 || j == matrixWhiteBorders[i].length - 1) {
+					matrixWhiteBorders[i][j] = W;
+				} else {
+					matrixWhiteBorders[i][j] = matrix[i-1][j-1];
+				}
+			} 
+		}
+		
+		int[] tab1 = {W, W, W, W, B, W, B, B, B, W, B};
+		int[] tab2 = {B, W, B, B, B, W, B, W, W, W, W};
+		for (int d = 0; d <= 1; ++d) {
+			for (int i = 0; i < matrixWhiteBorders.length; ++i) {
+				for (int j = 0; j < matrixWhiteBorders[i].length; ++j) {
+					if ((j < matrixWhiteBorders.length - 12 && d == 0) || (i < matrixWhiteBorders.length - 12 && d == 1)) {
+						for (int k = 0; k < tab1.length; ++k) {
+							if (d == 0) {
+								if (tab1[k] != matrixWhiteBorders[i][j+k]) {
+									break;
+								}
+							} else {
+								if (tab1[k] != matrixWhiteBorders[i+k][j]) {
+									break;
+								}
+							}
+							
+							if (k == tab1.length - 1)
+								penality += 40;
+						}
+						for (int k = 0; k < tab2.length; ++k) {
+							if (d == 0) {
+								if (tab2[k] != matrixWhiteBorders[i][j+k]) {
+									break;
+								}
+							} else {
+								if (tab2[k] != matrixWhiteBorders[i+k][j]) {
+									break;
+								}
+							}
+							
+							if (k == tab2.length - 1)
+								penality += 40;
+						}
+					}
+				}
+			}
+		}
+	
+		System.out.println("STEP 3 : " + Integer.toString(penality - p));
+		
 		int modulesTotal = matrix.length * matrix.length;
 		int darkModulesTotal = 0;
 
@@ -452,7 +541,6 @@ public class MatrixConstruction {
 		int fivePercentVariances = Math.abs(darkModulesTotal * 2 - modulesTotal) * 10 / modulesTotal;
 		System.out.println(fivePercentVariances*10);
 
-		return 0;
+		return penality;
 	}
-
 }
