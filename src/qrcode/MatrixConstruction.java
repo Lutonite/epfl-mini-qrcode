@@ -4,9 +4,18 @@ import java.security.cert.Extension;
 
 public class MatrixConstruction {
 
+    /**
+     * Change this boolean to enable the bonuses that we have done which could potentially break
+     * automatic graders or add methods that are not mentioned in the documentation. This will make it
+     * so most methods will use the ones defined in the Extensions class and static subclasses.
+     *
+     * @see Extensions
+     */
+    public final static boolean USE_EXTENSIONS = true;
+
 	/*
 	 * Constants defining the color in ARGB format
-	 * 
+	 *
 	 * W = White integer for ARGB
 	 * 
 	 * B = Black integer for ARGB
@@ -97,6 +106,8 @@ public class MatrixConstruction {
 	 * Implements the Direction interface to provide the translateValues function which, given the size of a rectangular
 	 * 		pattern int[y][x] in the form of an array {y, x}, returns the translation coordinates to access the NORTH_EAST
 	 * 		position. This simplifies any possible pattern iteration done afterwards.
+	 *
+	 * Commented anchor points are never used in this project and will probably never be used for QR code generation.
 	 */
 	public enum Anchor implements Direction {
 		NORTH 	   {public int[] translateValues(int[] size) { return new int[] {0        , size[1]/2}; }},
@@ -123,17 +134,33 @@ public class MatrixConstruction {
 	 * @return The matrix of the QR code
 	 */
 	public static int[][] renderQRCodeMatrix(int version, boolean[] data, int mask) {
+	    if (USE_EXTENSIONS) {
+	    	// We use our own QRCodeInfos class which is defined from the version and the correction level
+			// Other parameters such as the mask are determined with the evaluator done in this file.
+			int[][] matrix = initializeMatrix(version);
 
-		/*
-		 * PART 2
-		 */
-		int[][] matrix = constructMatrix(version, mask);
-		/*
-		 * PART 3
-		 */
-		addDataInformation(matrix, data, mask);
+			Extensions.QRCodeInfos qrCodeInfos =
+					new Extensions.QRCodeInfos(
+							version,
+							Main.MASK,
+							Extensions.CORRECTION_LEVEL
+					);
 
-		return matrix;
+			Extensions.constructMatrix(matrix, qrCodeInfos);
+
+			return matrix;
+        } else {
+            /*
+             * PART 2
+             */
+            int[][] matrix = constructMatrix(version, mask);
+            /*
+             * PART 3
+             */
+            addDataInformation(matrix, data, mask);
+
+            return matrix;
+        }
 	}
 
 	/*
@@ -160,8 +187,7 @@ public class MatrixConstruction {
 	public static int[][] constructMatrix(int version, int mask) {
 		int[][] m = initializeMatrix(version);
 		addFinderPatterns(m);
-		if (Main.USE_EXTENSIONS) Extensions.addAlignmentPatterns(m, version);
-		else addAlignmentPatterns(m, version);
+		addAlignmentPatterns(m, version);
 		addTimingPatterns(m);
 		addDarkModule(m);
 		addFormatInformation(m, mask);
@@ -183,13 +209,13 @@ public class MatrixConstruction {
 	}
 
 	/**
-	 * Overloaded method for non-alterning patterns without maximum coordinates.
+	 * Overloaded method for non-recurring patterns without maximum coordinates.
 	 *
 	 * @see MatrixConstruction#addPattern(Pattern, Anchor, int[][], int, int, int, int)
 	 */
 	public static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y) {
 		if (p.isRecurring())
-			throw new IllegalArgumentException("Alterning patterns must have maximum coordinates");
+			throw new IllegalArgumentException("Recurring patterns must have maximum coordinates");
 
 		addPattern(p, a, matrix, x, y, -1, -1);
 	}
@@ -202,8 +228,8 @@ public class MatrixConstruction {
 	 * @param matrix The matrix reference where the pattern should be added
 	 * @param x The starting x coordinate from the anchor
 	 * @param y The starting y coordinate from the anchor
-	 * @param maxX The maximum x coordinate from the anchor (only used when the pattern is alterning)
-	 * @param maxY The maximum y coordinate from the anchor (only used when the pattern is alterning)
+	 * @param maxX The maximum x coordinate from the anchor (only used when the pattern is recurring)
+	 * @param maxY The maximum y coordinate from the anchor (only used when the pattern is recurring)
 	 */
 	public static void addPattern(Pattern p, Anchor a, int[][] matrix, int x, int y, int maxX, int maxY) {
 		for (int j = 0; j < (p.isRecurring() ? maxY - y + 1 : p.getSize()[0]); j++) {
@@ -293,7 +319,7 @@ public class MatrixConstruction {
 
 		for (int i = 0; i < formatSequence.length; i++) {
 			matrix[i < 6 ? i : i == 6 ? i + 1 : 8][i > 8 ? 14 - i : i == 8 ? i - 1 : 8] = formatSequence[i] ? B : W;
-			matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 : matrix.length - 7 + i] = formatSequence[i] ? B : W;
+			matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 : matrix.length - i - 1] = formatSequence[i] ? B : W;
 		}
 	}
 
@@ -323,7 +349,7 @@ public class MatrixConstruction {
 			case 1: applyMask = row % 2 == 0; break;
 			case 2: applyMask = col % 3 == 0; break;
 			case 3: applyMask = (col + row) % 3 == 0; break;
-			case 4: applyMask = ((row / 2) + (col / 3)) % 2 == 0; break;
+			case 4: applyMask = ((col / 2) + (row / 3)) % 2 == 0; break;
 			case 5: applyMask = i == 0; break;
 			case 6: applyMask = i % 2 == 0; break;
 			case 7: applyMask = (((row + col) % 2) + ((row * col) % 3)) % 2 == 0; break;
@@ -539,7 +565,7 @@ public class MatrixConstruction {
 		}
 
 		int fivePercentVariances = Math.abs(darkModulesTotal * 2 - modulesTotal) * 10 / modulesTotal;
-		System.out.println(fivePercentVariances*10);
+		System.out.println(fivePercentVariances*2);
 
 		return penality;
 	}

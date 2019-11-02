@@ -2,16 +2,14 @@ package qrcode;
 
 public class Main {
 
-	public static final String INPUT =  "Hello";
+	public static final String INPUT =  "Hello world !";
 
 	/*
 	 * Parameters
 	 */
-	public static final int VERSION = 10;
-	public static final int MASK = 0;
-	public static final int SCALING = 20;
-
-	public static final boolean USE_EXTENSIONS = true;
+	public static final int VERSION = 40;
+	public static final int MASK = 4;
+	public static final int SCALING = 4;
 
 	public static void main(String[] args) {
 
@@ -25,6 +23,7 @@ public class Main {
 		Helpers.show(qrCode, SCALING);
 
 		System.out.println(MatrixConstruction.evaluate(qrCode));
+
 	}
 
 }

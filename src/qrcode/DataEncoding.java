@@ -7,24 +7,56 @@ import reedsolomon.ErrorCorrectionEncoding;
 public final class DataEncoding {
 
 	/**
+	 * Change this boolean to enable the bonuses that we have done which could potentially break
+	 * automatic graders or add methods that are not mentioned in the documentation. This will make it
+	 * so most methods will use the ones defined in the Extensions class and static subclasses.
+	 *
+	 * @see Extensions
+	 */
+	private final static boolean USE_EXTENSIONS = true;
+
+	/**
 	 * @param input String to put in binary array
 	 * @param version Version number for QR code
 	 * @return Byte array in booleans of the encoded string with added ECC
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
-		return bytesToBinaryArray(
-				addErrorCorrection(
-						fillSequence(
-								addInformations(
-										encodeString(
-												input,
-												QRCodeInfos.getMaxInputLength(version))
-								),
-								QRCodeInfos.getCodeWordsLength(version)
-						),
-						QRCodeInfos.getECCLength(version)
-				)
-		);
+		if (USE_EXTENSIONS) {
+			Extensions.QRCodeInfos qrCodeInfos =
+					new Extensions.QRCodeInfos(
+							version,
+							Main.MASK,
+							Extensions.CORRECTION_LEVEL
+					);
+
+			return bytesToBinaryArray(
+					addErrorCorrection(
+							fillSequence(
+									addInformations(
+											encodeString(
+													input,
+													qrCodeInfos.getMaxInputLength())
+									),
+									qrCodeInfos.getCodeWordsLength()
+							),
+							qrCodeInfos.getECCLength()
+					)
+			);
+		} else {
+			return bytesToBinaryArray(
+					addErrorCorrection(
+							fillSequence(
+									addInformations(
+											encodeString(
+													input,
+													QRCodeInfos.getMaxInputLength(version))
+									),
+									QRCodeInfos.getCodeWordsLength(version)
+							),
+							QRCodeInfos.getECCLength(version)
+					)
+			);
+		}
 	}
 
 	/**
