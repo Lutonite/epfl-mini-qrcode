@@ -342,8 +342,8 @@ public class MatrixConstruction {
 		int i = ((row * col) % 2) + ((row * col) % 3);
 		switch (masking) {
 			case 0: applyMask = (col + row) % 2 == 0; break;
-			case 1: applyMask = row % 2 == 0; break;
-			case 2: applyMask = col % 3 == 0; break;
+			case 1: applyMask = col % 2 == 0; break;
+			case 2: applyMask = row % 3 == 0; break;
 			case 3: applyMask = (col + row) % 3 == 0; break;
 			case 4: applyMask = ((col / 2) + (row / 3)) % 2 == 0; break;
 			case 5: applyMask = i == 0; break;
@@ -443,6 +443,11 @@ public class MatrixConstruction {
 		return 0;
 	}
 
+	private static final int PENALTY_N1 = 3;
+	private static final int PENALTY_N2 = 3;
+	private static final int PENALTY_N3 = 40;
+	private static final int PENALTY_N4 = 10;
+
 	/**
 	 * Compute the penalty score of a matrix
 	 * 
@@ -494,7 +499,7 @@ public class MatrixConstruction {
 				}
 			}
 		}
-		System.out.println("STEP 2 : " + Integer.toString(penality - p));
+		System.out.println("STEP 2 : " + (penality - p));
 		p = penality;
 		
 		//STEP 3
@@ -547,15 +552,15 @@ public class MatrixConstruction {
 				}
 			}
 		}
-	
-		System.out.println("STEP 3 : " + Integer.toString(penality - p));
+
+		System.out.println("STEP 3 : " + (penality - p));
 		
 		int modulesTotal = matrix.length * matrix.length;
 		int darkModulesTotal = 0;
 
-		for (int i = 0; i < matrix.length; i++) {
-			for (int j = 0; j < matrix[i].length; j++) {
-				if (matrix[i][j] == B) darkModulesTotal++;
+		for (int[] ints : matrix) {
+			for (int anInt : ints) {
+				if (anInt == B) darkModulesTotal++;
 			}
 		}
 

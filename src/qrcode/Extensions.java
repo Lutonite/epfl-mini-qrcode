@@ -20,7 +20,7 @@ import java.util.*;
 
 public class Extensions {
 
-    public final static QRCodeInfos.CorrectionLevel CORRECTION_LEVEL = QRCodeInfos.CorrectionLevel.HIGH;
+    public static QRCodeInfos.CorrectionLevel CORRECTION_LEVEL = QRCodeInfos.CorrectionLevel.LOW;
 
     private final static int ALIGNMENT_PATTERNS_FIRST_POSITION = 6;
 
@@ -119,7 +119,7 @@ public class Extensions {
 
         int patternAmount = version / 7 + 2;
         int[] returnArray = new int[patternAmount];
-        int matrixSize = qrcode.QRCodeInfos.getMatrixSize(version); // TODO maybe change that
+        int matrixSize = qrcode.QRCodeInfos.getMatrixSize(version);
 
         returnArray[0] = ALIGNMENT_PATTERNS_FIRST_POSITION; // first position is always 6 (on the column of timing patterns)
 
@@ -245,7 +245,7 @@ public class Extensions {
      * @return The input bytes with an header giving the type and size of the data
      */
     public static int[] addInformations(int[] inputBytes, QRCodeInfos infos) {
-        int additionalBytes = 0;
+        int additionalBytes;
         if (infos.getVersion() < 10) additionalBytes = 2;
         else additionalBytes = 3;
 
@@ -256,8 +256,8 @@ public class Extensions {
             tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
             tabBytes[1] = ((inputLength & 0x0F) << 4) + (inputBytes[0] >> 4);
         } else {
-            tabBytes[0] = (0b0100 << 4) + (inputLength & 0xF000);
-            tabBytes[1] = (inputLength & 0x0FF0);
+            tabBytes[0] = (0b0100 << 4) + (inputLength  >> 12);
+            tabBytes[1] = (inputLength & 0xFF0) >> 4;
             tabBytes[2] = ((inputLength & 0x000F) << 4) + (inputBytes[0] >> 4);
         }
 
@@ -658,7 +658,6 @@ public class Extensions {
                 errorCorrectionBlockList = createErrorCorrectionBlockList(id);
             }
 
-            public Map<Integer, ErrorCorrectionBlock[]> getErrorCorrectionBlockList() { return errorCorrectionBlockList; }
             public int getErrorCorrectionLevelBit() { return errorCorrectionLevelBits[this.id]; }
             public ErrorCorrectionBlocks getErrorCorrectionBlocks(int version) {
                 ErrorCorrectionBlock[] list = errorCorrectionBlockList.get(version - 1);
@@ -691,7 +690,6 @@ public class Extensions {
 
         // Getters
         public int getVersion() { return version; }
-        public CorrectionLevel getCorrectionLevel() { return correctionLevel; }
         public int[] getAlignmentPatternsCoordinates() { return alignmentPatternsCoordinates; }
         public ErrorCorrectionBlocks getErrorCorrectionBlocks() { return errorCorrectionBlocks; }
 
@@ -744,12 +742,14 @@ public class Extensions {
          * @return An array of booleans corresponding to the bits that need to be placed in the QR code
          */
         public boolean[] getFormatSequence() {
-            int code = ((correctionLevel.getErrorCorrectionLevelBit() & 0x3) << 3) | (mask & 0x7);
-            int current = code << 10;
+            int code = ((correctionLevel.getErrorCorrectionLevelBit() & 0x3) << 3) + (mask & 0x7);
+            int current = code;
 
-            current = getBCH(current, 0b10100110111, 15, 10);
+            for (int i = 0; i < 10; i++) {
+                current = (current << 1) ^ ((current >>> 9) * 0b10100110111);
+            }
 
-            int format = (code<<10 | (current & 0x3FF)) ^ 0b101010000010010;
+            int format = (code << 10 | current) ^ 0b101010000010010;
 
             boolean[] formatPixels = new boolean[15];
             for(int i=0;i<formatPixels.length;i++) {
@@ -774,7 +774,7 @@ public class Extensions {
         private static int getBCH(int data, int poly, int size, int finalSize) {
             while(((0b1<<(size-1)) & data) ==0) {
                 size--;
-                if(size == 0) {
+                if (size == 0) {
                     throw new IllegalAccessError();
                 }
             }
@@ -853,7 +853,6 @@ public class Extensions {
             }
             return sum;
         }
-        public ErrorCorrectionBlock[] getErrorCorrectionBlockList() { return errorCorrectionBlockList; }
     }
 
     /**
@@ -869,7 +868,7 @@ public class Extensions {
         }
 
         public int getAmount() { return amount; }
-        public int getDataCodewordsAmount() { return dataCodewordsAmount; };
+        public int getDataCodewordsAmount() { return dataCodewordsAmount; }
     }
 
 }
