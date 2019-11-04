@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import io.nayuki.qrcodegen.*;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +14,6 @@ import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 
 class RandomizedTests {
 
