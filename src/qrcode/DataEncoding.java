@@ -7,13 +7,10 @@ import reedsolomon.ErrorCorrectionEncoding;
 public final class DataEncoding {
 
 	/**
-	 * Change this boolean to enable the bonuses that we have done which could potentially break
-	 * automatic graders or add methods that are not mentioned in the documentation. This will make it
-	 * so most methods will use the ones defined in the Extensions class and static subclasses.
-	 *
+	 * @see MatrixConstruction#USE_EXTENSIONS
 	 * @see Extensions
 	 */
-	private final static boolean USE_EXTENSIONS = true;
+	private final static boolean USE_EXTENSIONS = MatrixConstruction.USE_EXTENSIONS;
 
 	/**
 	 * @param input String to put in binary array
@@ -25,21 +22,21 @@ public final class DataEncoding {
 			Extensions.QRCodeInfos qrCodeInfos =
 					new Extensions.QRCodeInfos(
 							version,
-							Main.MASK,
 							Extensions.CORRECTION_LEVEL
 					);
 
 			return bytesToBinaryArray(
-					addErrorCorrection(
+					Extensions.addErrorCorrection(
 							fillSequence(
-									addInformations(
+									Extensions.addInformations(
 											encodeString(
 													input,
-													qrCodeInfos.getMaxInputLength())
+													qrCodeInfos.getMaxInputLength()),
+											qrCodeInfos
 									),
 									qrCodeInfos.getCodeWordsLength()
 							),
-							qrCodeInfos.getECCLength()
+							qrCodeInfos
 					)
 			);
 		} else {

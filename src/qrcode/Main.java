@@ -17,7 +17,7 @@ public class Main {
 		boolean[] encodedData = DataEncoding.byteModeEncoding(INPUT, VERSION);
 		
 		// Image
-		int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(VERSION, encodedData,MASK);
+		int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(VERSION, encodedData, MASK);
 
 		// Visualization
 		Helpers.show(qrCode, SCALING);

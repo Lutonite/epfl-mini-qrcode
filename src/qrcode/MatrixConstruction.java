@@ -1,7 +1,5 @@
 package qrcode;
 
-import java.security.cert.Extension;
-
 public class MatrixConstruction {
 
     /**
@@ -16,17 +14,13 @@ public class MatrixConstruction {
 	/*
 	 * Constants defining the color in ARGB format
 	 *
-	 * W = White integer for ARGB
-	 * 
-	 * B = Black integer for ARGB
+	 * W = White ARGB integer
+	 * B = Black ARGB integer
 	 * 
 	 * both needs to have their alpha component to 255
 	 */
 	public final static int W = 0xFF_FF_FF_FF;
 	public final static int B = 0xFF_00_00_00;
-
-	// ...  MYDEBUGCOLOR = ...;
-	// feel free to add your own colors for debugging purposes
 
 	/**
 	 * Pattern definitions, any pattern can be added with the following properties:
@@ -142,11 +136,13 @@ public class MatrixConstruction {
 			Extensions.QRCodeInfos qrCodeInfos =
 					new Extensions.QRCodeInfos(
 							version,
-							Main.MASK,
+							mask,
 							Extensions.CORRECTION_LEVEL
 					);
 
 			Extensions.constructMatrix(matrix, qrCodeInfos);
+
+			addDataInformation(matrix, data, mask);
 
 			return matrix;
         } else {
@@ -427,7 +423,6 @@ public class MatrixConstruction {
 	 * @return The matrix of the QR code
 	 */
 	public static int[][] renderQRCodeMatrix(int version, boolean[] data) {
-
 		int mask = findBestMasking(version, data);
 
 		return renderQRCodeMatrix(version, data, mask);

@@ -1,7 +1,8 @@
 package qrcode;
 
-import java.util.HashMap;
-import java.util.Map;
+import reedsolomon.ErrorCorrectionEncoding;
+
+import java.util.*;
 
 /**
  * Extensions file. This file contains the methods and definitions which are used in order
@@ -11,7 +12,6 @@ import java.util.Map;
  * Bonuses we have done:
  *      - addAlignmentsPattern for all versions of QR codes
  *      - evaluate function
- *      - numeric and alphanumeric encoding with detection of which method to use
  *      - support for versions from 1 to 40
  *
  * @author Kelvin Kappeler
@@ -23,6 +23,14 @@ public class Extensions {
     public final static QRCodeInfos.CorrectionLevel CORRECTION_LEVEL = QRCodeInfos.CorrectionLevel.HIGH;
 
     private final static int ALIGNMENT_PATTERNS_FIRST_POSITION = 6;
+
+
+    /* =================================================================================================================
+
+                                               MATRIX CONSTRUCTION EXTENSIONS
+
+       ============================================================================================================== */
+
 
     /**
      * @see MatrixConstruction#constructMatrix(int, int);
@@ -39,6 +47,7 @@ public class Extensions {
         MatrixConstruction.addTimingPatterns(matrix);
         MatrixConstruction.addDarkModule(matrix);
         addFormatInformation(matrix, infos);
+        addVersionInformation(matrix, infos);
     }
 
     /**
@@ -183,6 +192,13 @@ public class Extensions {
         }
     }
 
+    /**
+     * Method to add the format information using the format sequence generated with our own method which accepts
+     * error correction levels higher than Low for versions higher than 4.
+     *
+     * @param matrix The matrix reference of the QR code
+     * @param infos The linked information for the qr code
+     */
     public static void addFormatInformation(int[][] matrix, QRCodeInfos infos) {
         boolean[] formatSequence = infos.getFormatSequence();
 
@@ -191,6 +207,163 @@ public class Extensions {
             matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 :  matrix.length - i - 1] = formatSequence[i] ? MatrixConstruction.B : MatrixConstruction.W;
         }
     }
+
+    /**
+     * Method to (maybe) add the version information for QR codes of version >= 7.
+     *
+     * @param matrix The matrix reference of the QR Code
+     * @param infos The infos linked to the QR code
+     */
+    public static void addVersionInformation(int[][] matrix, QRCodeInfos infos) {
+        if (infos.getVersion() < 7) return;
+
+        boolean[] versionSequence = infos.getVersionSequence();
+
+        int bitIndex = versionSequence.length;
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 3; j++) {
+                boolean currentBit = versionSequence[--bitIndex];
+                matrix[i][matrix.length - 11 + j] = currentBit ? MatrixConstruction.B : MatrixConstruction.W;
+                matrix[matrix.length - 11 + j][i] = currentBit ? MatrixConstruction.B : MatrixConstruction.W;
+            }
+        }
+    }
+
+
+    /* =================================================================================================================
+
+                                                 DATA ENCODING EXTENSIONS
+
+       ============================================================================================================== */
+
+
+    /**
+     * Add the 12-20 bits information data and concatenate the bytes to it
+     *
+     * @param inputBytes the data byte sequence
+     * @param infos the infos linked to the qr code
+     * @return The input bytes with an header giving the type and size of the data
+     */
+    public static int[] addInformations(int[] inputBytes, QRCodeInfos infos) {
+        int additionalBytes = 0;
+        if (infos.getVersion() < 10) additionalBytes = 2;
+        else additionalBytes = 3;
+
+        int[] tabBytes = new int[inputBytes.length + additionalBytes];
+        int inputLength = inputBytes.length & 0xFFFF;
+
+        if (additionalBytes == 2) {
+            tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
+            tabBytes[1] = ((inputLength & 0x0F) << 4) + (inputBytes[0] >> 4);
+        } else {
+            tabBytes[0] = (0b0100 << 4) + (inputLength & 0xF000);
+            tabBytes[1] = (inputLength & 0x0FF0);
+            tabBytes[2] = ((inputLength & 0x000F) << 4) + (inputBytes[0] >> 4);
+        }
+
+        for (int i = 1; i < tabBytes.length - additionalBytes; i++) {
+            tabBytes[i+additionalBytes-1] = ((inputBytes[i-1] & 0x0F) << 4) + (inputBytes[i] >> 4);
+        }
+
+        tabBytes[tabBytes.length - 1] = (inputBytes[inputBytes.length - 1] & 0x0F) << 4;
+
+        return tabBytes;
+    }
+
+    /**
+     * Add the error correction to the encodedData.
+     * For this function to work for all version, we need to split the data into the blocks as defined with
+     * our ErrorCorrectionBlock-s classes. Some version require codewords to be divided in two groups with the second
+     * group always having one more codeword than the first.
+     *
+     * This function is mainly an iteration over each error encoding block and add it to an Array list to later
+     * be properly interleaved and added to a final int array containing the data which needs to be added to
+     * the QR code matrix.
+     *
+     * We mainly have to extrapolate information from the definitions given by the specification (ISO/IEC 18004:2000(E))
+     * to be able to have the right amount of data at each given point.
+     *
+     * @param encodedData The byte array representing the data encoded
+     * @param infos The information linked to the QR code
+     * @return the original data interleaved with the error correction
+     */
+    public static int[] addErrorCorrection(int[] encodedData, QRCodeInfos infos) {
+        ErrorCorrectionBlocks ecb = infos.getErrorCorrectionBlocks();
+
+        int maxDataBytes = 0;
+        int maxEcBytes = 0;
+
+        // We could potentially here use ecb.getAmountBlocks(), but I am unsure whether this would work in all
+        // cases and ArrayLists are sufficiently optimized for our use-case.
+        List<int[]> dataBlocks = new ArrayList<>();
+        List<int[]> ecBlocks   = new ArrayList<>();
+
+        for (int i = 0, k = 0; i < ecb.getAmountBlocks(); i++) {
+            // extract data from EC blocks and version info
+            int ecBlocksG2 = infos.getCodeWordsLength() % ecb.getAmountBlocks();
+            int ecBlocksG1 = ecb.getAmountBlocks() - ecBlocksG2;
+            int bytesG1 = infos.getCodeWordsLength() / ecb.getAmountBlocks();
+            int bytesG2 = bytesG1 + 1;
+            int dataBytesG1 = infos.getDataLength() / ecb.getAmountBlocks();
+            int dataBytesG2 = dataBytesG1 + 1;
+            int ecBytesG1 = bytesG1 - dataBytesG1;
+            int ecBytesG2 = bytesG2 - dataBytesG2;
+
+            int dataBytesInBlock;
+            int ecBytesInBlock;
+
+            if (i < ecBlocksG1) {
+                dataBytesInBlock = dataBytesG1;
+                ecBytesInBlock = ecBytesG1;
+            } else {
+                dataBytesInBlock = dataBytesG2;
+                ecBytesInBlock = ecBytesG2;
+            }
+
+            // copy the subset of data for the current block and the corresponding block ecc
+            int[] blockDataBytes = Arrays.copyOfRange(encodedData, k, k + dataBytesInBlock);
+            int[] blockEcBytes = ErrorCorrectionEncoding.encode(blockDataBytes, ecBytesInBlock);
+
+            dataBlocks.add(blockDataBytes);
+            ecBlocks.add(blockEcBytes);
+
+            maxDataBytes = Math.max(maxDataBytes, dataBytesInBlock);
+            maxEcBytes = Math.max(maxEcBytes, blockEcBytes.length);
+            k += dataBytesInBlock;
+        }
+
+        // mainly using array list so that we can use the add method (could possibly be improved)
+        List<Integer> finalResult = new ArrayList<>(maxDataBytes + maxEcBytes);
+
+        for (int i = 0; i < maxDataBytes; i++) {
+            for (int[] dataBlock : dataBlocks) {
+                if (i < dataBlock.length) {
+                    finalResult.add(dataBlock[i]);
+                }
+            }
+        }
+        for (int i = 0; i < maxEcBytes; i++) {
+            for (int[] ecBlock : ecBlocks) {
+                if (i < ecBlock.length) {
+                    finalResult.add(ecBlock[i]);
+                }
+            }
+        }
+
+        int[] finalArray = new int[finalResult.size()];
+        for (int i = 0; i < finalArray.length; i++) {
+            finalArray[i] = finalResult.get(i);
+        }
+
+        return finalArray;
+    }
+
+
+    /* =================================================================================================================
+
+                                              QR CODE INFORMATION EXTENSIONS
+
+       ============================================================================================================== */
 
 
     /**
@@ -502,6 +675,10 @@ public class Extensions {
         private final int[] alignmentPatternsCoordinates;
         private final ErrorCorrectionBlocks errorCorrectionBlocks;
 
+        QRCodeInfos(int version, CorrectionLevel correctionLevel) {
+            this(version, 0, correctionLevel);
+        }
+
         QRCodeInfos(int version, int mask, CorrectionLevel correctionLevel) {
             if (version < 1 || version > 40)
                 throw new IllegalArgumentException("Version must be between 1 and 40 included.");
@@ -516,6 +693,7 @@ public class Extensions {
         public int getVersion() { return version; }
         public CorrectionLevel getCorrectionLevel() { return correctionLevel; }
         public int[] getAlignmentPatternsCoordinates() { return alignmentPatternsCoordinates; }
+        public ErrorCorrectionBlocks getErrorCorrectionBlocks() { return errorCorrectionBlocks; }
 
         /**
          * Get the maximum input length for a given QR code version
@@ -526,23 +704,28 @@ public class Extensions {
             if(version > 40 || version < 1) {
                 throw new UnsupportedOperationException("The version has to be between 1 and 40 included.");
             }
-            return errorCorrectionBlocks.getAmountDataCodewords() - 2 ;
+
+            if (version < 10)
+                return errorCorrectionBlocks.getAmountDataCodewords() - 2;
+            else
+                return errorCorrectionBlocks.getAmountDataCodewords() - 3;
         }
 
         /**
-         * Get the number of error correction codewords needed for a given version
+         * Get the data length for the QR code
          *
-         * @return
+         * @return the maximum number of bytes of data that can be encoded for the given version
          */
-        public int getECCLength() {
+        public int getDataLength() {
             if(version > 40 || version < 1) {
                 throw new UnsupportedOperationException("The version has to be between 1 and 40 included.");
             }
-            return errorCorrectionBlocks.getAmountErrorCorrectionCodewords();
+
+            return errorCorrectionBlocks.getAmountDataCodewords();
         }
 
         /**
-         * Get the number of codewords encoding the data for a given version
+         * Get the number of codewords encoding the entire QR Code for a given version
          *
          * @return the number of codewords in the version
          */
@@ -550,7 +733,7 @@ public class Extensions {
             if(version > 40 || version < 1) {
                 throw new UnsupportedOperationException("The version has to be between 1 and 40 included.");
             }
-            return errorCorrectionBlocks.getAmountDataCodewords() ;
+            return errorCorrectionBlocks.getAmountDataCodewords() + errorCorrectionBlocks.getAmountErrorCorrectionCodewords();
         }
 
         /**
@@ -564,30 +747,9 @@ public class Extensions {
             int code = ((correctionLevel.getErrorCorrectionLevelBit() & 0x3) << 3) | (mask & 0x7);
             int current = code << 10;
 
-            int poly = 0b10100110111;
-            int size = 15;
-            while(((0b1<<(size-1)) & current) ==0) {
-                size--;
-                if(size == 0) {
-                    throw new IllegalAccessError();
-                }
-            }
+            current = getBCH(current, 0b10100110111, 15, 10);
 
-            while(size>10) {
-                int paddedPoly = poly<<(size-11);
-
-                current = paddedPoly^current;
-
-
-                while(((0b1<<(size-1)) & current) == 0) {
-                    size--;
-                    if(size == 0) {
-                        throw new IllegalAccessError();
-                    }
-                }
-            }
-
-            int format = (code<<10 | (current& 0x3FF)) ^ 0b101010000010010;
+            int format = (code<<10 | (current & 0x3FF)) ^ 0b101010000010010;
 
             boolean[] formatPixels = new boolean[15];
             for(int i=0;i<formatPixels.length;i++) {
@@ -596,6 +758,62 @@ public class Extensions {
 
             return formatPixels;
         }
+
+        /**
+         * Private method used to determine the Bose-Chaudhuri-Hocquenghem code for a given data.
+         *
+         * This calculation is a copy of what was used in the QRCodeInfos#getFormatSequence() method.
+         * @see QRCodeInfos#getFormatSequence()
+         *
+         * @param data the data to encode
+         * @param poly the polynomial
+         * @param size the original data size
+         * @param finalSize the final size required for the bch code
+         * @return the encoded bch code
+         */
+        private static int getBCH(int data, int poly, int size, int finalSize) {
+            while(((0b1<<(size-1)) & data) ==0) {
+                size--;
+                if(size == 0) {
+                    throw new IllegalAccessError();
+                }
+            }
+
+            while(size>finalSize) {
+                int paddedPoly = poly<<(size-finalSize-1);
+
+                data ^= paddedPoly;
+
+                while(((0b1<<(size-1)) & data) == 0) {
+                    size--;
+                    if(size == 0) {
+                        throw new IllegalAccessError();
+                    }
+                }
+            }
+
+            return data;
+        }
+
+        /**
+         * A function to generate the version sequence for QR codes with version > 6
+         *
+         * @return An array of booleans corresponding to the bits to add to the QR codes.
+         */
+        public boolean[] getVersionSequence() {
+            int versionPoly = 0x1F25;
+            int sequence = version << 12;
+
+            int finalSequence = sequence | getBCH(sequence, versionPoly, 18, 12);
+
+            boolean[] formatPixels = new boolean[18];
+            for(int i = 0; i < formatPixels.length; i++) {
+                formatPixels[i] = !(((finalSequence >> (17 - i)) & 0b1) == 0);
+            }
+
+            return formatPixels;
+        }
+
 
     }
 
@@ -620,7 +838,7 @@ public class Extensions {
         }
 
         public int getErrorCorrectionCodewordsPerBlock() { return errorCorrectionCodewordsPerBlock; }
-        public int getAmountErrorCorrectionCodewords() { return errorCorrectionCodewordsPerBlock * getAmountBlocks(); }
+        public int getAmountErrorCorrectionCodewords() { return getErrorCorrectionCodewordsPerBlock() * getAmountBlocks(); }
         public int getAmountDataCodewords() {
             int sum = 0;
             for (ErrorCorrectionBlock ecb : errorCorrectionBlockList) {
@@ -629,7 +847,11 @@ public class Extensions {
             return sum;
         }
         public int getAmountBlocks() {
-            int sum = 0; for (ErrorCorrectionBlock ecb : errorCorrectionBlockList) { sum += ecb.getAmount(); } return sum;
+            int sum = 0;
+            for (ErrorCorrectionBlock ecb : errorCorrectionBlockList) {
+                sum += ecb.getAmount();
+            }
+            return sum;
         }
         public ErrorCorrectionBlock[] getErrorCorrectionBlockList() { return errorCorrectionBlockList; }
     }
