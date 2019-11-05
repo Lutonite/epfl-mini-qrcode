@@ -2,13 +2,16 @@ package qrcode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.nayuki.qrcodegen.QrCode;
+import io.nayuki.qrcodegen.QrSegment;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import io.nayuki.qrcodegen.*;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -17,11 +20,13 @@ import javax.imageio.ImageIO;
 
 class RandomizedTests {
 
-
-    public static int[][] readMatrix(String name) {
+    /*
+     * These methods have been copied from Helpers.
+     */
+    static int[][] readMatrix(String name) {
         return imageToMatrix(read(name));
     }
-    private static int[][] imageToMatrix(BufferedImage image) {
+    static int[][] imageToMatrix(BufferedImage image) {
         int[][] matrix = new int[image.getWidth()][image.getHeight()];
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
@@ -30,7 +35,7 @@ class RandomizedTests {
         }
         return matrix;
     }
-    private static BufferedImage read(String name) {
+    static BufferedImage read(String name) {
         String projectPath = System.getProperty("user.dir");
         String path = projectPath + File.separator + "images/" + name;
         try {
@@ -46,14 +51,7 @@ class RandomizedTests {
             throw new IllegalArgumentException("The image '"+path+"' does not exist or could not load");
         }
     }
-
-    /**
-     * compare a matrix loaded from file with a 2D-array given in arguments.
-     * @param matrix the 2-dimensional array
-     * @param imagePath the path of the image to compare with the matrix
-     * @return true if the 2 images are similar, false otherwise
-     */
-    public static boolean compare(int [][] matrix,String imagePath) {
+    static boolean compare(int [][] matrix,String imagePath) {
         int[][] expected= readMatrix(imagePath);
         if(expected.length != matrix.length || expected.length!=expected[0].length || matrix.length!=matrix[0].length) {
             throw new IllegalArgumentException("The size of the two QR code does not match: matrix:"+matrix.length+"  image:"+expected.length);
@@ -70,6 +68,96 @@ class RandomizedTests {
         return similar;
     }
 
+    private boolean generateAndCompare(String uuid,
+                               QrCode.Ecc ecl1,
+                               Extensions.QRCodeInfos.CorrectionLevel ecl2,
+                               int v,
+                               int m) {
+
+        List<QrSegment> segs = new ArrayList<>();
+        segs.add(QrSegment.makeBytes(uuid.getBytes(StandardCharsets.ISO_8859_1)));
+
+        QrCode qr1 = QrCode.encodeSegments(segs, ecl1, v, v, m , false);
+        BufferedImage img = qr1.toImage(1, 0);
+        try {
+            ImageIO.write(img, "png",
+                    new File(System.getProperty("user.dir") + File.separator + "images" + File.separator + "temp.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Extensions.CORRECTION_LEVEL = ecl2;
+
+        boolean[] encodedData = DataEncoding.byteModeEncoding(uuid, v);
+        int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(v, encodedData, m);
+
+        return compare(qrCode, "temp");
+    }
+
+    @BeforeAll
+    static void init() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+    }
+
+    @Test
+    void testVersions1to4withRandomValuesWithoutExtensionsOnLowECC() {
+        MatrixConstruction.USE_EXTENSIONS = false;
+
+        for (int v = 1; v <= 4; v++) {
+            for (int m = 0; m < 7; m++) {
+                String uuid = RandomStringUtils.randomAlphanumeric(v*9) + "c";
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                        Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+
+        MatrixConstruction.USE_EXTENSIONS = true;
+    }
+
+    @Test
+    void testVersions1to4withEmptyStringWithoutExtensionsOnLowECC() {
+        MatrixConstruction.USE_EXTENSIONS = false;
+
+        for (int v = 1; v <= 4; v++) {
+            for (int m = 0; m < 7; m++) {
+                String uuid = "";
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                        Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+
+        MatrixConstruction.USE_EXTENSIONS = true;
+    }
+
+    @Test
+    void testVersions1to40withEmptyStringOnAllECC() {
+        for (int v = 1; v <= 40; v++) {
+            for (int m = 0; m < 7; m++) {
+                String uuid = "";
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                        Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
+                        Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
+                        Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
+                        Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+    }
+
     @Test
     void testVersions1to40withRandomValuesOnLowECC() {
         for (int v = 1; v <= 40; v++) {
@@ -78,28 +166,9 @@ class RandomizedTests {
                 // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 9) + "e";
 
-                List<QrSegment> segments = QrSegment.makeSegments(uuid);
-                QrCode qr = QrCode.encodeSegments(segments, QrCode.Ecc.LOW, v, v, m, false);
-                BufferedImage img = qr.toImage(1, 0);
-                try {
-                    ImageIO.write(img, "png", new File(
-                            System.getProperty("user.dir")
-                                    + File.separator
-                                    + "images"
-                                    + File.separator
-                                    + "temp.png"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                Extensions.CORRECTION_LEVEL = Extensions.QRCodeInfos.CorrectionLevel.LOW;
-
-                boolean[] encodedData = DataEncoding.byteModeEncoding(uuid, v);
-                int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(v, encodedData, m);
-
-                Helpers.writeMatrix("testLow", qrCode);
-
-                assertTrue(compare(qrCode, "temp"), "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                        Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
             }
         }
     }
@@ -112,28 +181,9 @@ class RandomizedTests {
                 // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 6) + "e";
 
-                List<QrSegment> segments = QrSegment.makeSegments(uuid);
-                QrCode qr = QrCode.encodeSegments(segments, QrCode.Ecc.MEDIUM, v, v, m, false);
-                BufferedImage img = qr.toImage(1, 0);
-                try {
-                    ImageIO.write(img, "png", new File(
-                            System.getProperty("user.dir")
-                                    + File.separator
-                                    + "images"
-                                    + File.separator
-                                    + "temp.png"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                Extensions.CORRECTION_LEVEL = Extensions.QRCodeInfos.CorrectionLevel.MEDIUM;
-
-                boolean[] encodedData = DataEncoding.byteModeEncoding(uuid, v);
-                int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(v, encodedData, m);
-
-                Helpers.writeMatrix("testMedium", qrCode);
-
-                assertTrue(compare(qrCode, "temp"), "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
+                        Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
             }
         }
     }
@@ -146,28 +196,9 @@ class RandomizedTests {
                 // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
 
-                List<QrSegment> segments = QrSegment.makeSegments(uuid);
-                QrCode qr = QrCode.encodeSegments(segments, QrCode.Ecc.QUARTILE, v, v, m, false);
-                BufferedImage img = qr.toImage(1, 0);
-                try {
-                    ImageIO.write(img, "png", new File(
-                            System.getProperty("user.dir")
-                                    + File.separator
-                                    + "images"
-                                    + File.separator
-                                    + "temp.png"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                Extensions.CORRECTION_LEVEL = Extensions.QRCodeInfos.CorrectionLevel.QUARTILE;
-
-                boolean[] encodedData = DataEncoding.byteModeEncoding(uuid, v);
-                int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(v, encodedData, m);
-
-                Helpers.writeMatrix("testQuartile", qrCode);
-
-                assertTrue(compare(qrCode, "temp"), "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
+                        Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
             }
         }
     }
@@ -180,28 +211,9 @@ class RandomizedTests {
                 // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
 
-                List<QrSegment> segments = QrSegment.makeSegments(uuid);
-                QrCode qr = QrCode.encodeSegments(segments, QrCode.Ecc.HIGH, v, v, m, false);
-                BufferedImage img = qr.toImage(1, 0);
-                try {
-                    ImageIO.write(img, "png", new File(
-                            System.getProperty("user.dir")
-                                    + File.separator
-                                    + "images"
-                                    + File.separator
-                                    + "temp.png"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                Extensions.CORRECTION_LEVEL = Extensions.QRCodeInfos.CorrectionLevel.HIGH;
-
-                boolean[] encodedData = DataEncoding.byteModeEncoding(uuid, v);
-                int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(v, encodedData, m);
-
-                Helpers.writeMatrix("testHigh", qrCode);
-
-                assertTrue(compare(qrCode, "temp"), "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
+                        Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
             }
         }
     }

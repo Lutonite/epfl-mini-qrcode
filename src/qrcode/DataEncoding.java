@@ -86,6 +86,8 @@ public final class DataEncoding {
 		int[] tabBytes = new int[inputBytes.length + 2];
 		int inputLength = inputBytes.length & 0xFF;
 
+		if (inputLength == 0) inputBytes = new int[] {0};
+
 		tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
 		tabBytes[1] = ((inputLength & 0x0F) << 4) + (inputBytes[0] >> 4);
 

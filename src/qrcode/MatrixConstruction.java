@@ -9,7 +9,7 @@ public class MatrixConstruction {
      *
      * @see Extensions
      */
-    public final static boolean USE_EXTENSIONS = true;
+    public static boolean USE_EXTENSIONS = false;
 
 	/*
 	 * Constants defining the color in ARGB format
@@ -342,10 +342,10 @@ public class MatrixConstruction {
 		int i = ((row * col) % 2) + ((row * col) % 3);
 		switch (masking) {
 			case 0: applyMask = (col + row) % 2 == 0; break;
-			case 1: applyMask = col % 2 == 0; break;
-			case 2: applyMask = row % 3 == 0; break;
+			case 1: applyMask = row % 2 == 0; break;
+			case 2: applyMask = col % 3 == 0; break;
 			case 3: applyMask = (col + row) % 3 == 0; break;
-			case 4: applyMask = ((col / 2) + (row / 3)) % 2 == 0; break;
+			case 4: applyMask = ((row / 2) + (col / 3)) % 2 == 0; break;
 			case 5: applyMask = i == 0; break;
 			case 6: applyMask = i % 2 == 0; break;
 			case 7: applyMask = (((row + col) % 2) + ((row * col) % 3)) % 2 == 0; break;
@@ -389,7 +389,7 @@ public class MatrixConstruction {
                         bitToPlace = false;
                     }
 
-                    matrix[posX][y] = maskColor(y, posX, bitToPlace, mask);
+                    matrix[posX][y] = maskColor(posX, y, bitToPlace, mask);
                 }
                 y += direction;
             }
@@ -477,7 +477,7 @@ public class MatrixConstruction {
 						count = 0;
 					
 					if (count == 5)
-						penality += 3;
+						penality += PENALTY_N1;
 					else if (count > 5)
 						++penality;
 				}

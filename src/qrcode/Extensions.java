@@ -252,6 +252,8 @@ public class Extensions {
         int[] tabBytes = new int[inputBytes.length + additionalBytes];
         int inputLength = inputBytes.length & 0xFFFF;
 
+        if (inputLength == 0) inputBytes = new int[] {0};
+
         if (additionalBytes == 2) {
             tabBytes[0] = (0b0100 << 4) + (inputLength >> 4);
             tabBytes[1] = ((inputLength & 0x0F) << 4) + (inputBytes[0] >> 4);

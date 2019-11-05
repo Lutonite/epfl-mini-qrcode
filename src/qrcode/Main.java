@@ -2,14 +2,14 @@ package qrcode;
 
 public class Main {
 
-	public static final String INPUT =  "ciQbBkYKCgMa";
+	public static final String INPUT =  "";
 
 	/*
 	 * Parameters
 	 */
 	public static final int VERSION = 1;
 	public static final int MASK = 0;
-	public static final int SCALING = 4;
+	public static final int SCALING = 16;
 
 	public static void main(String[] args) {
 
