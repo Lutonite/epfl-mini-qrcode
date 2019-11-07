@@ -108,8 +108,6 @@ public class Extensions {
      * preferred to put it here so that it is clearly named inside the Extensions namespace. Theoretically, this should
      * be in the QRCodeInfos sub-class.
      *
-     * TODO Create a unit test for the following function.
-     *
      * @param version The QR code version, must be within 1 and 40 inclusive
      * @return The list of coordinates for the alignment patterns
      */
@@ -302,19 +300,15 @@ public class Extensions {
 
         for (int i = 0, k = 0; i < ecb.getAmountBlocks(); i++) {
             // extract data from EC blocks and version info
-            int ecBlocksG2 = infos.getCodeWordsLength() % ecb.getAmountBlocks();
-            int ecBlocksG1 = ecb.getAmountBlocks() - ecBlocksG2;
-            int bytesG1 = infos.getCodeWordsLength() / ecb.getAmountBlocks();
-            int bytesG2 = bytesG1 + 1;
             int dataBytesG1 = infos.getDataLength() / ecb.getAmountBlocks();
             int dataBytesG2 = dataBytesG1 + 1;
-            int ecBytesG1 = bytesG1 - dataBytesG1;
-            int ecBytesG2 = bytesG2 - dataBytesG2;
+            int ecBytesG1 = (infos.getCodeWordsLength() / ecb.getAmountBlocks()) - dataBytesG1;
+            int ecBytesG2 = ((infos.getCodeWordsLength() / ecb.getAmountBlocks()) + 1) - dataBytesG2;
 
             int dataBytesInBlock;
             int ecBytesInBlock;
 
-            if (i < ecBlocksG1) {
+            if (i < (ecb.getAmountBlocks() - infos.getCodeWordsLength() % ecb.getAmountBlocks())) {
                 dataBytesInBlock = dataBytesG1;
                 ecBytesInBlock = ecBytesG1;
             } else {
@@ -337,6 +331,7 @@ public class Extensions {
         // mainly using array list so that we can use the add method (could possibly be improved)
         List<Integer> finalResult = new ArrayList<>(maxDataBytes + maxEcBytes);
 
+        // interleave the data between the blocks in the start
         for (int i = 0; i < maxDataBytes; i++) {
             for (int[] dataBlock : dataBlocks) {
                 if (i < dataBlock.length) {
@@ -344,6 +339,7 @@ public class Extensions {
                 }
             }
         }
+        // then interleave the ec data
         for (int i = 0; i < maxEcBytes; i++) {
             for (int[] ecBlock : ecBlocks) {
                 if (i < ecBlock.length) {
@@ -820,7 +816,7 @@ public class Extensions {
     }
 
     /*
-     * The following to classes are built to be in accordance with ISO/IEC 18004:2000(E)
+     * The following two classes are built to be in accordance with ISO/IEC 18004:2000(E)
      * They allow to easily link all of the data in Tables 13 to 22 to their corresponding version and correction level.
      *
      * They are constructed in the QRCodeInfos class using the same tables (possibly the most disgusting code ever,

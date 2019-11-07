@@ -9,7 +9,7 @@ public class MatrixConstruction {
      *
      * @see Extensions
      */
-    public static boolean USE_EXTENSIONS = false;
+    public static boolean USE_EXTENSIONS = true;
 
 	/*
 	 * Constants defining the color in ARGB format
@@ -364,43 +364,36 @@ public class MatrixConstruction {
 	 *            the data to add
 	 */
 	public static void addDataInformation(int[][] matrix, boolean[] data, int mask) {
-        int x = matrix.length - 1;
-        int y = matrix.length - 1;
-
         int currentBit = 0;
         int direction = -1;
 
-        while (x > 0) {
-            // Skip vertical timing pattern
-            if (x == 6) x -= 1;
+        int x = matrix.length - 1;
+        int y = matrix.length - 1;
 
-            while (y >= 0 && y < matrix.length) {
-                for (int i = 0; i < 2; i++) {
-                    int posX = x - i;
+        for (;x > 0; x -= 2) {
+			if (x == 6) x -= 1;    // Skip vertical timing pattern
+			for (;y >= 0 && y < matrix.length; y += direction) {
+				for (int i = 0; i <= 1; i++) {
+					int posX = x - i;
 
-                    // If a bit is already placed there
-                    if (matrix[posX][y] != 0) continue;
+					// If a bit is already placed there
+					if (matrix[posX][y] != 0) continue;
 
-                    boolean bitToPlace;
-                    if (currentBit < data.length) {
-                        bitToPlace = data[currentBit];
-                        currentBit++;
-                    } else {
-                        bitToPlace = false;
-                    }
+					boolean bitToPlace;
+					if (currentBit < data.length) {
+						bitToPlace = data[currentBit];
+						currentBit++;
+					} else {
+						bitToPlace = false;
+					}
 
-                    matrix[posX][y] = maskColor(posX, y, bitToPlace, mask);
-                }
-                y += direction;
-            }
+					matrix[posX][y] = maskColor(posX, y, bitToPlace, mask);
+				}
+			}
 
-            direction = -direction;
-            y += direction;
-
-            // since qr codes are always odd sized, we will never get an out of bounds since we skip one column
-            // to avoid the vertical timing patten at x = 6.
-            x -= 2;
-        }
+			direction = -direction;
+			y += direction;
+		}
 	}
 
 	/*
@@ -443,64 +436,66 @@ public class MatrixConstruction {
 		return 0;
 	}
 
-	private static final int PENALTY_N1 = 3;
-	private static final int PENALTY_N2 = 3;
-	private static final int PENALTY_N3 = 40;
-	private static final int PENALTY_N4 = 10;
+	private static final int PENALITY_N1 = 3;
+	private static final int PENALITY_N2 = 3;
+	private static final int PENALITY_N3 = 40;
+	private static final int PENALITY_N4 = 10;
 
 	/**
-	 * Compute the penalty score of a matrix
+	 * Compute the penalty score of a matrix.
 	 * 
 	 * @param matrix:
 	 *            the QR code in matrix form
 	 * @return the penalty score obtained by the QR code, lower the better
 	 */
 	public static int evaluate(int[][] matrix) {
-		int penality = 0;
+
+		/*
+		 * We are following the official specification on this: we used ISO/IEC 18004:2000(E).
+		 */
+
+		int penalityStep1 = 0;
+		int penalityStep2 = 0;
+		int penalityStep3 = 0;
+		int penalityStep4 = 0;
 		
 		//STEP 1
-		for (int d = 0; d <= 1; ++d) {
-			int count = 0;
-			for (int i = 0; i < matrix.length; ++i) {
-				for (int j = 0; j < matrix[i].length; ++j) {
-					int x = 0;
-					int y = 0;
-					
-					if (d == 0)
-						x = 1;
-					else
-						y = 1;
-					
-					if ((j == 0 && y == 1) || (i == 0 && x == 1) || (matrix[i-x][j-y] == matrix[i][j]))
+		for (int d = 0; d <= 1; d++) { // d == 0: horizontal / d == 1: vertical
+			for (int i = 0; i < matrix.length; i++) {
+				int count = 0;
+				int previous = 0x00_00_00_00;
+				for (int j = 0; j < matrix.length; j++) {
+					int current = d == 0 ? matrix[i][j] : matrix[j][i];
+					if (current == previous) {
 						count++;
-					else
-						count = 0;
-					
-					if (count == 5)
-						penality += PENALTY_N1;
-					else if (count > 5)
-						++penality;
-				}
-				count = 0;
-			}
-		}
-		System.out.println("STEP 1 : " + penality);
-		int p = penality;
-		
-		//STEP 2
-		for (int i = 0; i < matrix.length; ++i) {
-			for (int j = 0; j < matrix[i].length; ++j) {
-				if (i != 0 && j != 0 && i != matrix.length -1 && j != matrix.length -1) {
-					if (matrix[i][j] == matrix[i][j+1]
-						&& matrix[i][j] == matrix[i+1][j+1]
-						&& matrix [i][j] == matrix[i][j+1]) {
-						penality += 3;
+					} else {
+						if (count >= 5) {
+							penalityStep1 += PENALITY_N1 + (count - 5);
+						}
+						count = 1;
+						previous = current;
 					}
 				}
+				if (count >= 5) {
+					penalityStep1 += PENALITY_N1 + (count - 5);
+				}
 			}
 		}
-		System.out.println("STEP 2 : " + (penality - p));
-		p = penality;
+
+		// System.out.println("STEP 1 : " + penalityStep1);
+		
+		//STEP 2
+		for (int i = 0; i < matrix.length - 1; ++i) {
+			for (int j = 0; j < matrix[i].length - 1; ++j) {
+				int current = matrix[i][j];
+				if (current == matrix[i+1][ j ] &&
+					current == matrix[ i ][j+1] &&
+					current == matrix[i+1][j+1])
+					penalityStep2 += PENALITY_N2;
+			}
+		}
+
+		// System.out.println("STEP 2 : " + penalityStep2);
 		
 		//STEP 3
 		int[][] matrixWhiteBorders = new int[matrix.length+2][matrix.length+2];
@@ -513,48 +508,34 @@ public class MatrixConstruction {
 				}
 			} 
 		}
-		
 		int[] tab1 = {W, W, W, W, B, W, B, B, B, W, B};
 		int[] tab2 = {B, W, B, B, B, W, B, W, W, W, W};
-		for (int d = 0; d <= 1; ++d) {
-			for (int i = 0; i < matrixWhiteBorders.length; ++i) {
-				for (int j = 0; j < matrixWhiteBorders[i].length; ++j) {
-					if ((j < matrixWhiteBorders.length - 12 && d == 0) || (i < matrixWhiteBorders.length - 12 && d == 1)) {
-						for (int k = 0; k < tab1.length; ++k) {
-							if (d == 0) {
-								if (tab1[k] != matrixWhiteBorders[i][j+k]) {
-									break;
-								}
-							} else {
-								if (tab1[k] != matrixWhiteBorders[i+k][j]) {
-									break;
-								}
-							}
-							
-							if (k == tab1.length - 1)
-								penality += 40;
-						}
-						for (int k = 0; k < tab2.length; ++k) {
-							if (d == 0) {
-								if (tab2[k] != matrixWhiteBorders[i][j+k]) {
-									break;
-								}
-							} else {
-								if (tab2[k] != matrixWhiteBorders[i+k][j]) {
-									break;
-								}
-							}
-							
-							if (k == tab2.length - 1)
-								penality += 40;
+		for (int i = 0; i < matrixWhiteBorders.length; ++i) {
+			for (int j = 0; j < matrixWhiteBorders[i].length; ++j) {
+				for (int d = 0; j+tab1.length-1 < matrixWhiteBorders.length && d <= 1; d++) {
+					int current = d == 0 ? matrixWhiteBorders[i][j] : matrixWhiteBorders[j][i];
+					if (current != tab1[0] && current != tab2[0]) continue;
+
+					boolean tab1r = true;
+					boolean tab2r = true;
+					for (int e = 1; e < tab1.length; e++) {
+						if (d == 0) {
+							if (matrixWhiteBorders[i][j+e] != tab1[e]) tab1r = false;
+							if (matrixWhiteBorders[i][j+e] != tab2[e]) tab2r = false;
+						} else {
+							if (matrixWhiteBorders[j+e][i] != tab1[e]) tab1r = false;
+							if (matrixWhiteBorders[j+e][i] != tab2[e]) tab2r = false;
 						}
 					}
+					if (tab1r) penalityStep3 += PENALITY_N3;
+					if (tab2r) penalityStep3 += PENALITY_N3;
 				}
 			}
 		}
 
-		System.out.println("STEP 3 : " + (penality - p));
-		
+		// System.out.println("STEP 3 : " + penalityStep3);
+
+		// STEP 4
 		int modulesTotal = matrix.length * matrix.length;
 		int darkModulesTotal = 0;
 
@@ -565,8 +546,10 @@ public class MatrixConstruction {
 		}
 
 		int fivePercentVariances = Math.abs(darkModulesTotal * 2 - modulesTotal) * 10 / modulesTotal;
-		System.out.println(fivePercentVariances*2);
+		penalityStep4 += fivePercentVariances * PENALITY_N4;
 
-		return penality;
+		// System.out.println("STEP 4 : " + penalityStep4);
+
+		return penalityStep1 + penalityStep2 + penalityStep3 + penalityStep4;
 	}
 }

@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.nayuki.qrcodegen.QrCode;
 import io.nayuki.qrcodegen.QrSegment;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
@@ -94,8 +94,8 @@ class RandomizedTests {
         return compare(qrCode, "temp");
     }
 
-    @BeforeAll
-    static void init() {
+    @BeforeEach
+    void init() {
         MatrixConstruction.USE_EXTENSIONS = true;
     }
 
@@ -141,19 +141,19 @@ class RandomizedTests {
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
                         Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
-                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                        "TEST FAILED - ECC L - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
                         Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m),
-                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                        "TEST FAILED - ECC M - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
                         Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m),
-                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                        "TEST FAILED - ECC Q - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
                         Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m),
-                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                        "TEST FAILED - ECC H - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
             }
         }
     }
