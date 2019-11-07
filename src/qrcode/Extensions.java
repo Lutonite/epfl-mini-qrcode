@@ -177,6 +177,9 @@ public class Extensions {
 
         int[] coordinates = qrCodeInfos.getAlignmentPatternsCoordinates();
 
+        // we need to place alignment patterns for each combination of the coordinates array
+        // and ignore the positions where there is a finder pattern (so, in the order we use
+        // to place the modules, this would be each position where there isn't anything already)
         for (int i : coordinates) {
             for (int j : coordinates) {
                 if (matrix[i][j] == 0) {
@@ -201,8 +204,10 @@ public class Extensions {
         boolean[] formatSequence = infos.getFormatSequence();
 
         for (int i = 0; i < formatSequence.length; i++) {
-            matrix[i < 6 ? i : i == 6 ? i + 1 : 8][i > 8 ? 14 - i : i == 8 ? i - 1 : 8] = formatSequence[i] ? MatrixConstruction.B : MatrixConstruction.W;
-            matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 :  matrix.length - i - 1] = formatSequence[i] ? MatrixConstruction.B : MatrixConstruction.W;
+            matrix[i < 6 ? i : i == 6 ? i + 1 : 8][i > 8 ? 14 - i : i == 8 ? i - 1 : 8] =
+                    formatSequence[i] ? MatrixConstruction.B : MatrixConstruction.W;
+            matrix[i < 7 ? 8 : matrix.length - 8 + i - 7][i > 6 ? 8 :  matrix.length - i - 1] =
+                    formatSequence[i] ? MatrixConstruction.B : MatrixConstruction.W;
         }
     }
 
@@ -743,6 +748,7 @@ public class Extensions {
             int code = ((correctionLevel.getErrorCorrectionLevelBit() & 0x3) << 3) + (mask & 0x7);
             int current = code;
 
+            // small adjustment made so that it accepts empty code (with ecl medium and mask 0)
             for (int i = 0; i < 10; i++) {
                 current = (current << 1) ^ ((current >>> 9) * 0b10100110111);
             }
@@ -760,8 +766,8 @@ public class Extensions {
         /**
          * Private method used to determine the Bose-Chaudhuri-Hocquenghem code for a given data.
          *
-         * This calculation is a copy of what was used in the QRCodeInfos#getFormatSequence() method.
-         * @see QRCodeInfos#getFormatSequence()
+         * This calculation is a copy of what was used in the QRCodeInfos#getFormatSequence(int) method.
+         * @see qrcode.QRCodeInfos#getFormatSequence(int);
          *
          * @param data the data to encode
          * @param poly the polynomial

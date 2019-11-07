@@ -22,6 +22,14 @@ public class MatrixConstruction {
 	public final static int W = 0xFF_FF_FF_FF;
 	public final static int B = 0xFF_00_00_00;
 
+	/*
+	 * Constants for the 4 rules given by ISO/IEC 18004:2000(E).
+	 */
+	private static final int PENALITY_N1 = 3;
+	private static final int PENALITY_N2 = 3;
+	private static final int PENALITY_N3 = 40;
+	private static final int PENALITY_N4 = 10;
+
 	/**
 	 * Pattern definitions, any pattern can be added with the following properties:
 	 * 		- int[][] patternMatrix (required)       The pattern, for alternating patterns it must only be the recurring part
@@ -417,7 +425,6 @@ public class MatrixConstruction {
 	 */
 	public static int[][] renderQRCodeMatrix(int version, boolean[] data) {
 		int mask = findBestMasking(version, data);
-
 		return renderQRCodeMatrix(version, data, mask);
 	}
 
@@ -432,14 +439,19 @@ public class MatrixConstruction {
 	 * @return the mask number that minimize the penalty
 	 */
 	public static int findBestMasking(int version, boolean[] data) {
-		// TODO BONUS
-		return 0;
+		int mask = -1;
+		int penalty = -1;
+		for (int m = 0; m <= 7; m++) {
+			int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(version, data, m);
+			int p = evaluate(qrCode);
+			if (p < penalty || penalty == -1) {
+				mask = m;
+				penalty = p;
+			}
+		}
+		System.out.println("MASK CHOSEN : " + mask);
+		return mask;
 	}
-
-	private static final int PENALITY_N1 = 3;
-	private static final int PENALITY_N2 = 3;
-	private static final int PENALITY_N3 = 40;
-	private static final int PENALITY_N4 = 10;
 
 	/**
 	 * Compute the penalty score of a matrix.

@@ -4,28 +4,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.nayuki.qrcodegen.QrCode;
 import io.nayuki.qrcodegen.QrSegment;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang3.RandomStringUtils;
-
-import javax.imageio.ImageIO;
 
 class RandomizedTests {
 
     /*
      * These methods have been copied from Helpers.
      */
-    static int[][] readMatrix(String name) {
-        return imageToMatrix(read(name));
-    }
     static int[][] imageToMatrix(BufferedImage image) {
         int[][] matrix = new int[image.getWidth()][image.getHeight()];
         for (int i = 0; i < image.getWidth(); i++) {
@@ -35,24 +26,8 @@ class RandomizedTests {
         }
         return matrix;
     }
-    static BufferedImage read(String name) {
-        String projectPath = System.getProperty("user.dir");
-        String path = projectPath + File.separator + "images/" + name;
-        try {
-
-            if (!name.contains(".png")) {
-                path = path + ".png";
-            }
-            File pathToFile = new File(path);
-            BufferedImage image = ImageIO.read(pathToFile);
-            return image;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            throw new IllegalArgumentException("The image '"+path+"' does not exist or could not load");
-        }
-    }
-    static boolean compare(int [][] matrix,String imagePath) {
-        int[][] expected= readMatrix(imagePath);
+    static boolean compare(int [][] matrix, BufferedImage img) {
+        int[][] expected= imageToMatrix(img);
         if(expected.length != matrix.length || expected.length!=expected[0].length || matrix.length!=matrix[0].length) {
             throw new IllegalArgumentException("The size of the two QR code does not match: matrix:"+matrix.length+"  image:"+expected.length);
         }
@@ -68,35 +43,26 @@ class RandomizedTests {
         return similar;
     }
 
-    private boolean generateAndCompare(String uuid,
-                               QrCode.Ecc ecl1,
-                               Extensions.QRCodeInfos.CorrectionLevel ecl2,
-                               int v,
-                               int m) {
-
+    private boolean generateAndCompare(String uuid, QrCode.Ecc ecl1,
+                                       Extensions.QRCodeInfos.CorrectionLevel ecl2,
+                                       int v, int m, boolean masking) {
         List<QrSegment> segs = new ArrayList<>();
         segs.add(QrSegment.makeBytes(uuid.getBytes(StandardCharsets.ISO_8859_1)));
-
-        QrCode qr1 = QrCode.encodeSegments(segs, ecl1, v, v, m , false);
+        QrCode qr1;
+        if (masking) qr1 = QrCode.encodeSegments(segs, ecl1, v, v, -1, false);
+        else qr1 = QrCode.encodeSegments(segs, ecl1, v, v, m, false);
         BufferedImage img = qr1.toImage(1, 0);
-        try {
-            ImageIO.write(img, "png",
-                    new File(System.getProperty("user.dir") + File.separator + "images" + File.separator + "temp.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         Extensions.CORRECTION_LEVEL = ecl2;
-
         boolean[] encodedData = DataEncoding.byteModeEncoding(uuid, v);
         int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(v, encodedData, m);
 
-        return compare(qrCode, "temp");
+        return compare(qrCode, img);
     }
-
-    @BeforeEach
-    void init() {
-        MatrixConstruction.USE_EXTENSIONS = true;
+    private boolean generateAndCompare(String uuid, QrCode.Ecc ecl1,
+                                       Extensions.QRCodeInfos.CorrectionLevel ecl2,
+                                       int v, int m) {
+        return generateAndCompare(uuid, ecl1, ecl2, v, m, false);
     }
 
     @Test
@@ -162,8 +128,6 @@ class RandomizedTests {
     void testVersions1to40withRandomValuesOnLowECC() {
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
-                // qrcodegen uses utf8, but we use iso. So we will force byte mode
-                // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 9) + "e";
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
@@ -177,8 +141,6 @@ class RandomizedTests {
     void testVersions1to40withRandomValuesOnMediumECC() {
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
-                // qrcodegen uses utf8, but we use iso. So we will force byte mode
-                // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 6) + "e";
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
@@ -192,8 +154,6 @@ class RandomizedTests {
     void testVersions1to40withRandomValuesOnQuartileECC() {
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
-                // qrcodegen uses utf8, but we use iso. So we will force byte mode
-                // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
@@ -207,8 +167,6 @@ class RandomizedTests {
     void testVersions1to40withRandomValuesOnHighECC() {
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
-                // qrcodegen uses utf8, but we use iso. So we will force byte mode
-                // but not add any utf8 related characters
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
@@ -217,5 +175,76 @@ class RandomizedTests {
             }
         }
     }
+
+    // The following tests are not working because the Java library we used does not compute the mask the same way
+    // we do (the website version Nayuki uses the same penalty system as we do, but the Java version does not)
+    /*@Test
+    void testVersions1to4withRandomValuesAndBestMaskingWithoutExtensionsOnLowECC() {
+        MatrixConstruction.USE_EXTENSIONS = false;
+
+        for (int v = 1; v <= 4; v++) {
+            String uuid = RandomStringUtils.randomAlphanumeric(v * 9 + 1);
+
+            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
+
+            assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                    Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m, true),
+                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+        }
+
+        MatrixConstruction.USE_EXTENSIONS = true;
+    }
+
+    @Test
+    void testVersions1to40withRandomValuesAndBestMaskingOnLowECC() {
+        for (int v = 1; v <= 40; v++) {
+            String uuid = RandomStringUtils.randomAlphanumeric(v * 9 + 1);
+
+            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
+
+            assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                    Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m, true),
+                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+        }
+    }
+
+    @Test
+    void testVersions1to40withRandomValuesAndBestMaskingOnMediumECC() {
+        for (int v = 1; v <= 40; v++) {
+            String uuid = RandomStringUtils.randomAlphanumeric(v * 6) + "e";
+
+            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
+
+            assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
+                    Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m, true),
+                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+        }
+    }
+
+    @Test
+    void testVersions1to40withRandomValuesAndBestMaskingOnQuartileECC() {
+        for (int v = 1; v <= 40; v++) {
+            String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
+
+            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
+
+            assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
+                    Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m, true),
+                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+        }
+    }
+
+    @Test
+    void testVersions1to40withRandomValuesAndBestMaskingOnHighECC() {
+        for (int v = 1; v <= 40; v++) {
+            String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
+
+            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
+
+            assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
+                    Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m, true),
+                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+        }
+    }*/
 
 }
