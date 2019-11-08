@@ -12,6 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO Faire des tests avec versions alétatoires
+
 class RandomizedTests {
 
     /*

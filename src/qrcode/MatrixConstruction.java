@@ -455,7 +455,9 @@ public class MatrixConstruction {
 
 	/**
 	 * Compute the penalty score of a matrix.
-	 * 
+	 *
+	 * TODO
+	 *
 	 * @param matrix:
 	 *            the QR code in matrix form
 	 * @return the penalty score obtained by the QR code, lower the better
@@ -520,13 +522,13 @@ public class MatrixConstruction {
 				}
 			} 
 		}
-		int[] tab1 = {W, W, W, W, B, W, B, B, B, W, B};
-		int[] tab2 = {B, W, B, B, B, W, B, W, W, W, W};
+		int[] tab1 = {W, W, W, W, B, W, B, B, B, W, B, W};
+		int[] tab2 = {W, B, W, B, B, B, W, B, W, W, W, W};
 		for (int i = 0; i < matrixWhiteBorders.length; ++i) {
 			for (int j = 0; j < matrixWhiteBorders[i].length; ++j) {
 				for (int d = 0; j+tab1.length-1 < matrixWhiteBorders.length && d <= 1; d++) {
 					int current = d == 0 ? matrixWhiteBorders[i][j] : matrixWhiteBorders[j][i];
-					if (current != tab1[0] && current != tab2[0]) continue;
+					if (current != tab1[0]) continue; // tab1[0] and tab[0] are identical
 
 					boolean tab1r = true;
 					boolean tab2r = true;
