@@ -9,7 +9,7 @@ public class MatrixConstruction {
      *
      * @see Extensions
      */
-    public static boolean USE_EXTENSIONS = true;
+    public static boolean USE_EXTENSIONS = false;
 
 	/*
 	 * Constants defining the color in ARGB format
@@ -136,7 +136,14 @@ public class MatrixConstruction {
 	 * @return The matrix of the QR code
 	 */
 	public static int[][] renderQRCodeMatrix(int version, boolean[] data, int mask) {
-	    if (USE_EXTENSIONS) {
+		if (version < 1 || version > 40) {
+			if (USE_EXTENSIONS)
+				throw new UnsupportedOperationException("The version must be between 1 and 40 included.");
+			else
+				throw new UnsupportedOperationException("The version must be between 1 and 4 included.");
+		}
+
+		if (USE_EXTENSIONS) {
 	    	// We use our own QRCodeInfos class which is defined from the version and the correction level
 			// Other parameters such as the mask are determined with the evaluator done in this file.
 			int[][] matrix = initializeMatrix(version);
@@ -189,6 +196,10 @@ public class MatrixConstruction {
 	 *         initialized. The modules where the data should be remain empty.
 	 */
 	public static int[][] constructMatrix(int version, int mask) {
+		if (version < 1 || version > 4) {
+			throw new UnsupportedOperationException("The version must be between 1 and 4 included.");
+		}
+
 		int[][] m = initializeMatrix(version);
 		addFinderPatterns(m);
 		addAlignmentPatterns(m, version);
@@ -208,6 +219,10 @@ public class MatrixConstruction {
 	 * @return an empty matrix
 	 */
 	public static int[][] initializeMatrix(int version) {
+		if (version < 1 || version > 40) {
+			throw new UnsupportedOperationException("The version must be between 1 and 40 included.");
+		}
+
 		int size = QRCodeInfos.getMatrixSize(version);
 		return new int[size][size];
 	}
@@ -285,6 +300,9 @@ public class MatrixConstruction {
 	 *            included
 	 */
 	public static void addAlignmentPatterns(int[][] matrix, int version) {
+		if (version < 1 || version > 4) {
+			throw new UnsupportedOperationException("The version must be between 1 and 4 included.");
+		}
 		if (version >= 2)
 			addPattern(Pattern.ALIGNMENTPATTERN, Anchor.CENTER, matrix, matrix.length - 7, matrix.length - 7);
 	}

@@ -20,12 +20,16 @@ import java.util.*;
 
 public class Extensions {
 
+    /**
+     * The following constant defines which error correction level needs to be used.
+     * Change this to use other correction levels.
+     */
     public static QRCodeInfos.CorrectionLevel CORRECTION_LEVEL = QRCodeInfos.CorrectionLevel.LOW;
 
     private final static int ALIGNMENT_PATTERNS_FIRST_POSITION = 6;
 
 
-    /* =================================================================================================================
+    /* ==============================================================================================================
 
                                                MATRIX CONSTRUCTION EXTENSIONS
 
@@ -233,7 +237,7 @@ public class Extensions {
     }
 
 
-    /* =================================================================================================================
+    /* ==============================================================================================================
 
                                                  DATA ENCODING EXTENSIONS
 
@@ -303,6 +307,7 @@ public class Extensions {
         List<int[]> dataBlocks = new ArrayList<>();
         List<int[]> ecBlocks   = new ArrayList<>();
 
+        // k is a value to know at which position we are in the data array
         for (int i = 0, k = 0; i < ecb.getAmountBlocks(); i++) {
             // extract data from EC blocks and version info
             int dataBytesG1 = infos.getDataLength() / ecb.getAmountBlocks();
@@ -328,8 +333,12 @@ public class Extensions {
             dataBlocks.add(blockDataBytes);
             ecBlocks.add(blockEcBytes);
 
-            maxDataBytes = Math.max(maxDataBytes, dataBytesInBlock);
+            // Set the maximum lengths, they will mostly be the ones in G2, as they always have one more block
+            // But, in case G2 doesn't exist, we just use the maximum of the two.
+            maxDataBytes = Math.max(maxDataBytes, blockDataBytes.length);
             maxEcBytes = Math.max(maxEcBytes, blockEcBytes.length);
+
+            // increase the offset to the amount of data we already have processed
             k += dataBytesInBlock;
         }
 
@@ -353,6 +362,7 @@ public class Extensions {
             }
         }
 
+        // convert the final ArrayList to an int array
         int[] finalArray = new int[finalResult.size()];
         for (int i = 0; i < finalArray.length; i++) {
             finalArray[i] = finalResult.get(i);
@@ -362,7 +372,7 @@ public class Extensions {
     }
 
 
-    /* =================================================================================================================
+    /* ==============================================================================================================
 
                                               QR CODE INFORMATION EXTENSIONS
 
@@ -748,12 +758,12 @@ public class Extensions {
             int code = ((correctionLevel.getErrorCorrectionLevelBit() & 0x3) << 3) + (mask & 0x7);
             int current = code;
 
-            // small adjustment made so that it accepts empty code (with ecl medium and mask 0)
+            // small adjustment made so that it accepts an empty code (with ecl medium and mask 0 for example)
             for (int i = 0; i < 10; i++) {
                 current = (current << 1) ^ ((current >>> 9) * 0b10100110111);
             }
 
-            int format = (code << 10 | current) ^ 0b101010000010010;
+            int format = (code << 10 | current) ^ 0b101010000010010; // XOR the mask
 
             boolean[] formatPixels = new boolean[15];
             for(int i=0;i<formatPixels.length;i++) {
@@ -818,8 +828,15 @@ public class Extensions {
             return formatPixels;
         }
 
-
     }
+
+
+    /* ==============================================================================================================
+
+                                       ERROR CORRECTION CLASSES FOR ALL VERSIONS
+
+       ============================================================================================================== */
+
 
     /*
      * The following two classes are built to be in accordance with ISO/IEC 18004:2000(E)

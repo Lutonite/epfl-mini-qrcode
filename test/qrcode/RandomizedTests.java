@@ -12,8 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO Faire des tests avec versions alétatoires
-
 class RandomizedTests {
 
     /*
@@ -34,10 +32,11 @@ class RandomizedTests {
             throw new IllegalArgumentException("The size of the two QR code does not match: matrix:"+matrix.length+"  image:"+expected.length);
         }
         boolean similar = true;
-        for(int x=0;x<matrix.length;x++) {
-            for(int y=0;y<matrix.length;y++) {
-                if(matrix[x][y]!=expected[x][y]) {
+        for (int x = 0; x < matrix.length; x++) {
+            for (int y = 0; y < matrix.length; y++) {
+                if (matrix[x][y] != expected[x][y]) {
                     similar = false;
+                    break;
                 }
             }
         }
@@ -45,7 +44,7 @@ class RandomizedTests {
         return similar;
     }
 
-    private boolean generateAndCompare(String uuid, QrCode.Ecc ecl1,
+    private static boolean generateAndCompare(String uuid, QrCode.Ecc ecl1,
                                        Extensions.QRCodeInfos.CorrectionLevel ecl2,
                                        int v, int m, boolean masking) {
         List<QrSegment> segs = new ArrayList<>();
@@ -61,7 +60,7 @@ class RandomizedTests {
 
         return compare(qrCode, img);
     }
-    private boolean generateAndCompare(String uuid, QrCode.Ecc ecl1,
+    private static boolean generateAndCompare(String uuid, QrCode.Ecc ecl1,
                                        Extensions.QRCodeInfos.CorrectionLevel ecl2,
                                        int v, int m) {
         return generateAndCompare(uuid, ecl1, ecl2, v, m, false);
@@ -73,7 +72,7 @@ class RandomizedTests {
 
         for (int v = 1; v <= 4; v++) {
             for (int m = 0; m < 7; m++) {
-                String uuid = RandomStringUtils.randomAlphanumeric(v*9) + "c";
+                String uuid = RandomStringUtils.random(v*9) + "c";
 
                 assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
                         Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
@@ -103,6 +102,8 @@ class RandomizedTests {
 
     @Test
     void testVersions1to40withEmptyStringOnAllECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
                 String uuid = "";
@@ -127,7 +128,73 @@ class RandomizedTests {
     }
 
     @Test
+    void testVersions1to40withMaxLengthOnLowECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
+        for (int v = 1; v <= 40; v++) {
+            for (int m = 0; m < 7; m++) {
+                Extensions.QRCodeInfos testInfos = new Extensions.QRCodeInfos(v, m, Extensions.QRCodeInfos.CorrectionLevel.LOW);
+                String uuid = RandomStringUtils.randomAlphanumeric(testInfos.getMaxInputLength());
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                        Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
+                        "TEST FAILED - ECC L - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+    }
+    
+    @Test
+    void testVersions1to40withMaxLengthOnMediumECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
+        for (int v = 1; v <= 40; v++) {
+            for (int m = 0; m < 7; m++) {
+                Extensions.QRCodeInfos testInfos = new Extensions.QRCodeInfos(v, m, Extensions.QRCodeInfos.CorrectionLevel.MEDIUM);
+                String uuid = RandomStringUtils.randomAlphanumeric(testInfos.getMaxInputLength());
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
+                        Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+    }
+
+    @Test
+    void testVersions1to40withMaxLengthOnHighECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
+        for (int v = 1; v <= 40; v++) {
+            for (int m = 0; m < 7; m++) {
+                Extensions.QRCodeInfos testInfos = new Extensions.QRCodeInfos(v, m, Extensions.QRCodeInfos.CorrectionLevel.HIGH);
+                String uuid = RandomStringUtils.randomAlphanumeric(testInfos.getMaxInputLength());
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
+                        Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+    }
+
+    @Test
+    void testVersions1to40withMaxLengthOnQuartileECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
+        for (int v = 1; v <= 40; v++) {
+            for (int m = 0; m < 7; m++) {
+                Extensions.QRCodeInfos testInfos = new Extensions.QRCodeInfos(v, m, Extensions.QRCodeInfos.CorrectionLevel.QUARTILE);
+                String uuid = RandomStringUtils.randomAlphanumeric(testInfos.getMaxInputLength());
+
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
+                        Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
+        }
+    }
+
+    @Test
     void testVersions1to40withRandomValuesOnLowECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 9) + "e";
@@ -141,6 +208,8 @@ class RandomizedTests {
 
     @Test
     void testVersions1to40withRandomValuesOnMediumECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 6) + "e";
@@ -154,6 +223,8 @@ class RandomizedTests {
 
     @Test
     void testVersions1to40withRandomValuesOnQuartileECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
@@ -167,6 +238,8 @@ class RandomizedTests {
 
     @Test
     void testVersions1to40withRandomValuesOnHighECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
             for (int m = 0; m < 7; m++) {
                 String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
@@ -178,75 +251,64 @@ class RandomizedTests {
         }
     }
 
-    // The following tests are not working because the Java library we used does not compute the mask the same way
-    // we do (the website version Nayuki uses the same penalty system as we do, but the Java version does not)
-    /*@Test
-    void testVersions1to4withRandomValuesAndBestMaskingWithoutExtensionsOnLowECC() {
-        MatrixConstruction.USE_EXTENSIONS = false;
-
-        for (int v = 1; v <= 4; v++) {
-            String uuid = RandomStringUtils.randomAlphanumeric(v * 9 + 1);
-
-            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
-
-            assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
-                    Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m, true),
-                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
-        }
-
+    @Test
+    void testVersions1to40withRandomNumericOnLowECC() {
         MatrixConstruction.USE_EXTENSIONS = true;
-    }
 
-    @Test
-    void testVersions1to40withRandomValuesAndBestMaskingOnLowECC() {
         for (int v = 1; v <= 40; v++) {
-            String uuid = RandomStringUtils.randomAlphanumeric(v * 9 + 1);
+            for (int m = 0; m < 7; m++) {
+                String uuid = RandomStringUtils.randomNumeric(v * 9) + "e";
 
-            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
-
-            assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
-                    Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m, true),
-                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.LOW,
+                        Extensions.QRCodeInfos.CorrectionLevel.LOW, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
         }
     }
 
     @Test
-    void testVersions1to40withRandomValuesAndBestMaskingOnMediumECC() {
+    void testVersions1to40withRandomNumericOnMediumECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
-            String uuid = RandomStringUtils.randomAlphanumeric(v * 6) + "e";
+            for (int m = 0; m < 7; m++) {
+                String uuid = RandomStringUtils.randomNumeric(v * 6) + "e";
 
-            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
-
-            assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
-                    Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m, true),
-                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.MEDIUM,
+                        Extensions.QRCodeInfos.CorrectionLevel.MEDIUM, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
         }
     }
 
     @Test
-    void testVersions1to40withRandomValuesAndBestMaskingOnQuartileECC() {
+    void testVersions1to40withRandomNumericOnQuartileECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
-            String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
+            for (int m = 0; m < 7; m++) {
+                String uuid = RandomStringUtils.randomNumeric(v * 5) + "e";
 
-            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
-
-            assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
-                    Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m, true),
-                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.QUARTILE,
+                        Extensions.QRCodeInfos.CorrectionLevel.QUARTILE, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
         }
     }
 
     @Test
-    void testVersions1to40withRandomValuesAndBestMaskingOnHighECC() {
+    void testVersions1to40withRandomNumericOnHighECC() {
+        MatrixConstruction.USE_EXTENSIONS = true;
+
         for (int v = 1; v <= 40; v++) {
-            String uuid = RandomStringUtils.randomAlphanumeric(v * 5) + "e";
+            for (int m = 0; m < 7; m++) {
+                String uuid = RandomStringUtils.randomNumeric(v * 5) + "e";
 
-            int m = MatrixConstruction.findBestMasking(v, DataEncoding.byteModeEncoding(uuid, v));
-
-            assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
-                    Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m, true),
-                    "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+                assertTrue(generateAndCompare(uuid, QrCode.Ecc.HIGH,
+                        Extensions.QRCodeInfos.CorrectionLevel.HIGH, v, m),
+                        "TEST FAILED - VERSION: " + v + " MASK: " + m + " TEXT: " + uuid);
+            }
         }
-    }*/
+    }
 
 }

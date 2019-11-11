@@ -80,7 +80,9 @@ public final class QRCodeInfos {
 	 * @return the array of pixels encoding the format information. Most significant bit first
 	 */
 	public static boolean[] getFormatSequence(int mask) {
-		if(mask>7 || mask <0) {
+		if (mask<0)
+			return new boolean[15];
+		if(mask>7) {
 			throw new IllegalArgumentException("The mask has to be between 0 and 7");
 		}
 		int errorCorrectionLevel=CorrectionLvl.L.ordinal();

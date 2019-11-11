@@ -18,6 +18,13 @@ public final class DataEncoding {
 	 * @return Byte array in booleans of the encoded string with added ECC
 	 */
 	public static boolean[] byteModeEncoding(String input, int version) {
+		if (version < 1 || version > 40) {
+			if (USE_EXTENSIONS)
+				throw new UnsupportedOperationException("The version must be between 1 and 40 included.");
+			else
+				throw new UnsupportedOperationException("The version must be between 1 and 4 included.");
+		}
+
 		if (USE_EXTENSIONS) {
 			Extensions.QRCodeInfos qrCodeInfos =
 					new Extensions.QRCodeInfos(

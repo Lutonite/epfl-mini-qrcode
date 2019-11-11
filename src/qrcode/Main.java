@@ -2,14 +2,14 @@ package qrcode;
 
 public class Main {
 
-	public static final String INPUT = "";
+	public static final String INPUT = "Hello";
 
 	/*
 	 * Parameters
 	 */
-	public static final int VERSION = 40;
-	public static final int MASK = 2;
-	public static final int SCALING = 4;
+	public static final int VERSION = 1;
+	public static final int MASK = 0;
+	public static final int SCALING = 20;
 
 	public static void main(String[] args) {
 
@@ -17,7 +17,7 @@ public class Main {
 		boolean[] encodedData = DataEncoding.byteModeEncoding(INPUT, VERSION);
 		
 		// Image
-		int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(VERSION, encodedData);
+		int[][] qrCode = MatrixConstruction.renderQRCodeMatrix(VERSION, encodedData, MASK);
 
 		// Visualization
 		Helpers.show(qrCode, SCALING);
