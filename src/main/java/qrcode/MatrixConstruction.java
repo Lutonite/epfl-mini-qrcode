@@ -9,7 +9,7 @@ public class MatrixConstruction {
      *
      * @see Extensions
      */
-    public static boolean USE_EXTENSIONS = false;
+    public static boolean USE_EXTENSIONS = true;
 
 	/*
 	 * Constants defining the color in ARGB format
